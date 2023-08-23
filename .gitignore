@@ -130,3 +130,9 @@ dmypy.json
 
 # pycharm
 .idea/
+
+# google objects
+eagerx_demo/cliport/environments/assets/google/
+
+# exps
+exps/

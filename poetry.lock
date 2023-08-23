@@ -978,6 +978,45 @@ files = [
 protobuf = ["grpcio-tools (>=1.57.0)"]
 
 [[package]]
+name = "gym"
+version = "0.26.2"
+description = "Gym: A universal API for reinforcement learning environments"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "gym-0.26.2.tar.gz", hash = "sha256:e0d882f4b54f0c65f203104c24ab8a38b039f1289986803c7d02cdbe214fbcc4"},
+]
+
+[package.dependencies]
+cloudpickle = ">=1.2.0"
+gym_notices = ">=0.0.4"
+importlib_metadata = {version = ">=4.8.0", markers = "python_version < \"3.10\""}
+numpy = ">=1.18.0"
+
+[package.extras]
+accept-rom-license = ["autorom[accept-rom-license] (>=0.4.2,<0.5.0)"]
+all = ["ale-py (>=0.8.0,<0.9.0)", "box2d-py (==2.3.5)", "imageio (>=2.14.1)", "lz4 (>=3.1.0)", "matplotlib (>=3.0)", "moviepy (>=1.0.0)", "mujoco (==2.2)", "mujoco_py (>=2.1,<2.2)", "opencv-python (>=3.0)", "pygame (==2.1.0)", "pytest (==7.0.1)", "swig (==4.*)"]
+atari = ["ale-py (>=0.8.0,<0.9.0)"]
+box2d = ["box2d-py (==2.3.5)", "pygame (==2.1.0)", "swig (==4.*)"]
+classic-control = ["pygame (==2.1.0)"]
+mujoco = ["imageio (>=2.14.1)", "mujoco (==2.2)"]
+mujoco-py = ["mujoco_py (>=2.1,<2.2)"]
+other = ["lz4 (>=3.1.0)", "matplotlib (>=3.0)", "moviepy (>=1.0.0)", "opencv-python (>=3.0)"]
+testing = ["box2d-py (==2.3.5)", "imageio (>=2.14.1)", "lz4 (>=3.1.0)", "matplotlib (>=3.0)", "moviepy (>=1.0.0)", "mujoco (==2.2)", "mujoco_py (>=2.1,<2.2)", "opencv-python (>=3.0)", "pygame (==2.1.0)", "pytest (==7.0.1)", "swig (==4.*)"]
+toy-text = ["pygame (==2.1.0)"]
+
+[[package]]
+name = "gym-notices"
+version = "0.0.8"
+description = "Notices for gym"
+optional = false
+python-versions = "*"
+files = [
+    {file = "gym-notices-0.0.8.tar.gz", hash = "sha256:ad25e200487cafa369728625fe064e88ada1346618526102659b4640f2b4b911"},
+    {file = "gym_notices-0.0.8-py3-none-any.whl", hash = "sha256:e5f82e00823a166747b4c2a07de63b6560b1acb880638547e0cabf825a01e463"},
+]
+
+[[package]]
 name = "gymnasium"
 version = "0.28.1"
 description = "A standard API for reinforcement learning and a diverse set of reference environments (formerly Gym)."
@@ -1951,24 +1990,33 @@ test = ["coveralls", "futures", "mock", "pytest (>=2.7.3)", "pytest-benchmark", 
 
 [[package]]
 name = "protobuf"
-version = "4.24.1"
-description = ""
+version = "3.20.3"
+description = "Protocol Buffers"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "protobuf-4.24.1-cp310-abi3-win32.whl", hash = "sha256:d414199ca605eeb498adc4d2ba82aedc0379dca4a7c364ff9bc9a179aa28e71b"},
-    {file = "protobuf-4.24.1-cp310-abi3-win_amd64.whl", hash = "sha256:5906c5e79ff50fe38b2d49d37db5874e3c8010826f2362f79996d83128a8ed9b"},
-    {file = "protobuf-4.24.1-cp37-abi3-macosx_10_9_universal2.whl", hash = "sha256:970c701ee16788d74f3de20938520d7a0aebc7e4fff37096a48804c80d2908cf"},
-    {file = "protobuf-4.24.1-cp37-abi3-manylinux2014_aarch64.whl", hash = "sha256:fc361148e902949dcb953bbcb148c99fe8f8854291ad01107e4120361849fd0e"},
-    {file = "protobuf-4.24.1-cp37-abi3-manylinux2014_x86_64.whl", hash = "sha256:5d32363d14aca6e5c9e9d5918ad8fb65b091b6df66740ae9de50ac3916055e43"},
-    {file = "protobuf-4.24.1-cp37-cp37m-win32.whl", hash = "sha256:df015c47d6855b8efa0b9be706c70bf7f050a4d5ac6d37fb043fbd95157a0e25"},
-    {file = "protobuf-4.24.1-cp37-cp37m-win_amd64.whl", hash = "sha256:d4af4fd9e9418e819be30f8df2a16e72fbad546a7576ac7f3653be92a6966d30"},
-    {file = "protobuf-4.24.1-cp38-cp38-win32.whl", hash = "sha256:302e8752c760549ed4c7a508abc86b25d46553c81989343782809e1a062a2ef9"},
-    {file = "protobuf-4.24.1-cp38-cp38-win_amd64.whl", hash = "sha256:06437f0d4bb0d5f29e3d392aba69600188d4be5ad1e0a3370e581a9bf75a3081"},
-    {file = "protobuf-4.24.1-cp39-cp39-win32.whl", hash = "sha256:0b2b224e9541fe9f046dd7317d05f08769c332b7e4c54d93c7f0f372dedb0b1a"},
-    {file = "protobuf-4.24.1-cp39-cp39-win_amd64.whl", hash = "sha256:bd39b9094a4cc003a1f911b847ab379f89059f478c0b611ba1215053e295132e"},
-    {file = "protobuf-4.24.1-py3-none-any.whl", hash = "sha256:55dd644adc27d2a624339332755fe077c7f26971045b469ebb9732a69ce1f2ca"},
-    {file = "protobuf-4.24.1.tar.gz", hash = "sha256:44837a5ed9c9418ad5d502f89f28ba102e9cd172b6668bc813f21716f9273348"},
+    {file = "protobuf-3.20.3-cp310-cp310-manylinux2014_aarch64.whl", hash = "sha256:f4bd856d702e5b0d96a00ec6b307b0f51c1982c2bf9c0052cf9019e9a544ba99"},
+    {file = "protobuf-3.20.3-cp310-cp310-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:9aae4406ea63d825636cc11ffb34ad3379335803216ee3a856787bcf5ccc751e"},
+    {file = "protobuf-3.20.3-cp310-cp310-win32.whl", hash = "sha256:28545383d61f55b57cf4df63eebd9827754fd2dc25f80c5253f9184235db242c"},
+    {file = "protobuf-3.20.3-cp310-cp310-win_amd64.whl", hash = "sha256:67a3598f0a2dcbc58d02dd1928544e7d88f764b47d4a286202913f0b2801c2e7"},
+    {file = "protobuf-3.20.3-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:899dc660cd599d7352d6f10d83c95df430a38b410c1b66b407a6b29265d66469"},
+    {file = "protobuf-3.20.3-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:e64857f395505ebf3d2569935506ae0dfc4a15cb80dc25261176c784662cdcc4"},
+    {file = "protobuf-3.20.3-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:d9e4432ff660d67d775c66ac42a67cf2453c27cb4d738fc22cb53b5d84c135d4"},
+    {file = "protobuf-3.20.3-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:74480f79a023f90dc6e18febbf7b8bac7508420f2006fabd512013c0c238f454"},
+    {file = "protobuf-3.20.3-cp37-cp37m-win32.whl", hash = "sha256:b6cc7ba72a8850621bfec987cb72623e703b7fe2b9127a161ce61e61558ad905"},
+    {file = "protobuf-3.20.3-cp37-cp37m-win_amd64.whl", hash = "sha256:8c0c984a1b8fef4086329ff8dd19ac77576b384079247c770f29cc8ce3afa06c"},
+    {file = "protobuf-3.20.3-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:de78575669dddf6099a8a0f46a27e82a1783c557ccc38ee620ed8cc96d3be7d7"},
+    {file = "protobuf-3.20.3-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:f4c42102bc82a51108e449cbb32b19b180022941c727bac0cfd50170341f16ee"},
+    {file = "protobuf-3.20.3-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:44246bab5dd4b7fbd3c0c80b6f16686808fab0e4aca819ade6e8d294a29c7050"},
+    {file = "protobuf-3.20.3-cp38-cp38-win32.whl", hash = "sha256:c02ce36ec760252242a33967d51c289fd0e1c0e6e5cc9397e2279177716add86"},
+    {file = "protobuf-3.20.3-cp38-cp38-win_amd64.whl", hash = "sha256:447d43819997825d4e71bf5769d869b968ce96848b6479397e29fc24c4a5dfe9"},
+    {file = "protobuf-3.20.3-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:398a9e0c3eaceb34ec1aee71894ca3299605fa8e761544934378bbc6c97de23b"},
+    {file = "protobuf-3.20.3-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:bf01b5720be110540be4286e791db73f84a2b721072a3711efff6c324cdf074b"},
+    {file = "protobuf-3.20.3-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:daa564862dd0d39c00f8086f88700fdbe8bc717e993a21e90711acfed02f2402"},
+    {file = "protobuf-3.20.3-cp39-cp39-win32.whl", hash = "sha256:819559cafa1a373b7096a482b504ae8a857c89593cf3a25af743ac9ecbd23480"},
+    {file = "protobuf-3.20.3-cp39-cp39-win_amd64.whl", hash = "sha256:03038ac1cfbc41aa21f6afcbcd357281d7521b4157926f30ebecc8d4ea59dcb7"},
+    {file = "protobuf-3.20.3-py2.py3-none-any.whl", hash = "sha256:a7ca6d488aa8ff7f329d4c545b2dbad8ac31464f1d8b1c87ad1346717731e4db"},
+    {file = "protobuf-3.20.3.tar.gz", hash = "sha256:2e3427429c9cffebf259491be0af70189607f365c2f41c7c3764af6f337105f2"},
 ]
 
 [[package]]
@@ -3418,4 +3466,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8, <3.9"
-content-hash = "51c5aea4c683ba6f4bf786df2aa33db940786a7622712d299c3d669c3a1ef959"
+content-hash = "afff88bc82683c3aca0664cfc33ec248625f04abd599f796a548661efb98de7f"
