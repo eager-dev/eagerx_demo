@@ -9,9 +9,25 @@ repository = "https://github.com/eager-dev/eagerx_demo"
 documentation = "https://eagerx.readthedocs.io/en/master/"
 
 [tool.poetry.dependencies]
-python = ">=3.8, <3.11"
+python = "^3.8, <3.9"
 eagerx = "^0.1.38"
 eagerx-franka = "^0.0.4"
+clip = { git = "https://github.com/openai/clip.git", branch = "main" }
+openai = "^0.22.1"
+gdown = "3.13.1"
+ftfy = "^6.1.1"
+torch = {version = "^1.10.2", source = "torch"}
+torchvision = {version = "^0.11.3", source = "torch"}
+regex = "^2022.8.17"
+imageio = "2.9.0"
+imageio-ffmpeg = "0.4.5"
+meshcat = "0.0.18"
+transformers = "4.3.2"
+kornia = "0.4.1"
+pytorch-lightning = "1.0.3"
+hydra-core = "1.0.5"
+wandb = "0.10.15"
+transforms3d = "^0.4.1"
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"
@@ -20,6 +36,10 @@ pytest-cov = "^3.0.0"
 flake8 = ">=3"
 flake8-bugbear = "^22.3.23"
 
+[[tool.poetry.source]]
+name = "torch"
+url = "https://download.pytorch.org/whl/cu113"
+priority = "explicit"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
