@@ -1,12 +1,12 @@
-# `eagerx_template` package
+# `eagerx_demo` package
 
 [![license](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![codestyle](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Continuous Integration](https://github.com/eager-dev/eagerx_template/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/eager-dev/eagerx_template/actions/workflows/ci.yml)
-[![Test Coverage](coverage.svg)](https://github.com/eager-dev/eagerx_template/actions/workflows/ci.yml)
+[![Continuous Integration](https://github.com/eager-dev/eagerx_demo/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/eager-dev/eagerx_demo/actions/workflows/ci.yml)
+[![Test Coverage](coverage.svg)](https://github.com/eager-dev/eagerx_demo/actions/workflows/ci.yml)
 
 
-What is the `eagerx_template` package
+What is the `eagerx_demo` package
 -------------------------------------
 
 This repository provides a template for creating EAGERx packages.
@@ -21,7 +21,7 @@ Installation
 You can install the package using pip:
 
 ```bash
-pip3 install eagerx_template
+pip3 install eagerx_demo
 ```
 
 Cite EAGERx

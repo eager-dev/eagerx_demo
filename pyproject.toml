@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "eagerx_template"
+name = "eagerx_demo"
 version = "0.0.0"
 license = "Apache2.0"
-description = "Template for creating EAGERx packages."
+description = "OpenDR EAGERx use case demo."
 authors = ["Jelle Luijkx <j.d.luijkx@tudelft.nl>", "Bas van der Heijden <d.s.vanderheijden@tudelft.nl>"]
-homepage = "https://github.com/eager-dev/eagerx_template_private"
-repository = "https://github.com/eager-dev/eagerx_template_private"
+homepage = "https://github.com/eager-dev/eagerx_demo"
+repository = "https://github.com/eager-dev/eagerx_demo"
 documentation = "https://eagerx.readthedocs.io/en/master/"
 
 [tool.poetry.dependencies]
@@ -27,7 +27,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.semantic_release]
 version_variable = [
-    "eagerx_template/__init__.py:__version__",
+    "eagerx_demo/__init__.py:__version__",
     "pyproject.toml:version"
 ]
 branch = "master"
