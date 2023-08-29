@@ -26,11 +26,11 @@ class PackingBoxes(Task):
         # Add container box.
         zone_size = self.get_random_size(0.05, 0.3, 0.05, 0.3, 0.05, 0.05)
         zone_pose = self.get_random_pose(env, zone_size)
-        container_template = 'container/container-template.urdf'
+        container_template = "container/container-template.urdf"
         half = np.float32(zone_size) / 2
-        replace = {'DIM': zone_size, 'HALF': half}
+        replace = {"DIM": zone_size, "HALF": half}
         container_urdf = self.fill_template(container_template, replace)
-        env.add_object(container_urdf, zone_pose, 'fixed')
+        env.add_object(container_urdf, zone_pose, "fixed")
         if os.path.exists(container_urdf):
             os.remove(container_urdf)
 
@@ -39,7 +39,6 @@ class PackingBoxes(Task):
         bboxes = []
 
         class TreeNode:
-
             def __init__(self, parent, children, bbox):
                 self.parent = parent
                 self.children = children
@@ -57,17 +56,12 @@ class PackingBoxes(Task):
             split_axis = np.random.choice(range(len(split)), 1, p=split)[0]
 
             # Split along chosen axis and create 2 children
-            cut_ind = np.random.rand() * \
-                      (size[split_axis] - 2 * min_object_dim) + \
-                      node.bbox[split_axis] + min_object_dim
+            cut_ind = np.random.rand() * (size[split_axis] - 2 * min_object_dim) + node.bbox[split_axis] + min_object_dim
             child1_bbox = node.bbox.copy()
-            child1_bbox[3 + split_axis] = cut_ind - margin / 2.
+            child1_bbox[3 + split_axis] = cut_ind - margin / 2.0
             child2_bbox = node.bbox.copy()
-            child2_bbox[split_axis] = cut_ind + margin / 2.
-            node.children = [
-                TreeNode(node, [], bbox=child1_bbox),
-                TreeNode(node, [], bbox=child2_bbox)
-            ]
+            child2_bbox[split_axis] = cut_ind + margin / 2.0
+            node.children = [TreeNode(node, [], bbox=child1_bbox), TreeNode(node, [], bbox=child2_bbox)]
             KDTree(node.children[0])
             KDTree(node.children[1])
 
@@ -79,21 +73,21 @@ class PackingBoxes(Task):
         root = TreeNode(None, [], bbox=np.array(root_size))
         KDTree(root)
 
-        colors = [utils.COLORS[c] for c in utils.COLORS if c != 'brown']
+        colors = [utils.COLORS[c] for c in utils.COLORS if c != "brown"]
 
         # Add objects in container.
         object_points = {}
         object_ids = []
         bboxes = np.array(bboxes)
-        object_template = 'box/box-template.urdf'
+        object_template = "box/box-template.urdf"
         for bbox in bboxes:
             size = bbox[3:] - bbox[:3]
-            position = size / 2. + bbox[:3]
+            position = size / 2.0 + bbox[:3]
             position[0] += -zone_size[0] / 2
             position[1] += -zone_size[1] / 2
             pose = (position, (0, 0, 0, 1))
             pose = utils.multiply(zone_pose, pose)
-            urdf = self.fill_template(object_template, {'DIM': size})
+            urdf = self.fill_template(object_template, {"DIM": size})
             box_id = env.add_object(urdf, pose)
             if os.path.exists(urdf):
                 os.remove(urdf)
@@ -125,7 +119,16 @@ class PackingBoxes(Task):
         # .    np.argsort(-1 * np.array(object_volumes))
         # ]
 
-        self.goals.append((
-            object_ids, np.eye(len(object_ids)), true_poses, False, True, 'zone',
-            (object_points, [(zone_pose, zone_size)]), 1))
+        self.goals.append(
+            (
+                object_ids,
+                np.eye(len(object_ids)),
+                true_poses,
+                False,
+                True,
+                "zone",
+                (object_points, [(zone_pose, zone_size)]),
+                1,
+            )
+        )
         self.lang_goals.append(self.lang_template)

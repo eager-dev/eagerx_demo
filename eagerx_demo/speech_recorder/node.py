@@ -1,0 +1,176 @@
+import eagerx
+from eagerx.core.specs import NodeSpec
+from eagerx_demo.utils import string_to_uint8
+
+from threading import Thread
+from typing import Any
+from pathlib import Path
+from pynput.keyboard import Listener
+import queue
+import sys
+import sounddevice as sd
+import soundfile as sf
+import numpy as np
+import tempfile
+import whisper
+import torch
+
+ROOT = Path(__file__).parent.parent.parent
+
+
+class SpeechInput(eagerx.EngineNode):
+    @classmethod
+    def make(
+        cls,
+        name: str,
+        rate: float,
+        process: int = eagerx.process.NEW_PROCESS,
+        color: str = "cyan",
+        audio_device: str = None,
+        audio_path: str = None,
+        sample_rate: int = None,
+        channels: int = 1,
+        subtype: str = None,
+        debug: bool = False,
+        device: str = "cpu",
+        ckpt: str = "base.en",
+        prompt: str = None,
+    ):
+        spec = cls.get_specification()
+        spec.config.update(
+            name=name,
+            rate=rate,
+            process=process,
+            color=color,
+            audio_device=audio_device,
+            audio_path=audio_path,
+            sample_rate=sample_rate,
+            channels=channels,
+            subtype=subtype,
+            debug=debug,
+            device=device,
+            ckpt=ckpt,
+            prompt=prompt,
+            inputs=["tick"],
+            outputs=["speech"],
+        )
+        return spec
+
+    def initialize(self, spec: NodeSpec, simulator: Any):
+        self.input = None
+        self.correct = False
+        self.recording = False
+        self.prompt = spec.config.prompt
+
+        self.audio_path = spec.config.audio_path or tempfile.mktemp(prefix="rec_", suffix=".wav", dir="")
+        self.audio_device = spec.config.audio_device
+
+        # In debug mode we don't record audio
+        self.debug = spec.config.debug
+        if self.debug:
+            self.device_info = {}
+            self.sample_rate = 16000
+        else:
+            self.device_info = sd.query_devices(self.audio_device, "input")
+            self.sample_rate = spec.config.sample_rate or int(self.device_info["default_samplerate"])
+
+        device = torch.device(spec.config.device)
+        self.model = whisper.load_model(spec.config.ckpt, device=device)
+        self.channels = spec.config.channels
+        self.subtype = spec.config.subtype
+        self.q = queue.Queue()
+        thread = Thread(target=self._speech_recorder)
+        thread.start()
+
+    @eagerx.register.states()
+    def reset(self):
+        self.input = None
+        self.recording = False
+        self.correct = False
+        self.speech = ""
+
+        self.q = queue.Queue()
+        print("#" * 80)
+        print("hold r to record command")
+        print("#" * 80)
+
+    @eagerx.register.inputs(tick=eagerx.Space(dtype="int64"))
+    @eagerx.register.outputs(speech=eagerx.Space(dtype="uint8", shape=(280,)))
+    def callback(self, t_n: float, tick: Any = None):
+        speech = ""
+        if self.input is not None and self.correct:
+            speech = self.input
+            self.input = None
+            self.correct = False
+        speech = string_to_uint8(speech)
+        return dict(speech=speech)
+
+    def _speech_recorder(self):
+        # Collect events until released
+        with Listener(on_press=self._on_press, on_release=self._on_release) as listener:
+            listener.join()
+
+    def _on_press(self, key):
+        if not self.recording and self.input is None:
+            if hasattr(key, "char") and key.char == ("r"):
+                self.recording = True
+                q = queue.Queue()
+                # First delete the file if it already exists
+                try:
+                    Path(self.audio_path).unlink()
+                except FileNotFoundError:
+                    pass
+                print("RECORD...")
+                thread = Thread(target=self._soundfile_writer, daemon=True)
+                thread.start()
+        if self.input is not None and not self.correct:
+            if hasattr(key, "char") and key.char == ("y"):
+                self.correct = True
+                print(f"Command {self.input} will be executed.")
+                print("#" * 80)
+                print("hold r to record")
+                print("#" * 80)
+            if hasattr(key, "char") and key.char == ("n"):
+                self.input = None
+                self.correct = False
+                print("Sorry I misunderstood, please try again!")
+                print("#" * 80)
+                print("hold r to record")
+                print("#" * 80)
+
+    def _on_release(self, key):
+        if hasattr(key, "char") and key.char == ("r"):
+            self.recording = False
+            print("Done RECORD")
+            if self.debug:
+                result = dict(text="put the milk in the fridge")
+            else:
+                result = self.model.transcribe(
+                    self.audio_path,
+                    initial_prompt=self.prompt,
+                )
+            self.input = result["text"]
+            if "stop" in result["text"].lower():
+                self.correct = True
+            else:
+                print(f"Is the following command correct?\n{result['text']}\n(y/n)")
+
+    def _sd_callback(self, indata, frames, time, status):
+        """This is called (from a separate thread) for each audio block."""
+        if status:
+            print(status, file=sys.stderr)
+        self.q.put(indata.copy())
+
+    def _soundfile_writer(self):
+        with sf.SoundFile(
+            self.audio_path, mode="x", samplerate=self.sample_rate, channels=self.channels, subtype=self.subtype
+        ) as file:
+            if self.debug:
+                while self.recording:
+                    file.write(np.asarray(1, dtype="int32"))
+            else:
+                with sd.InputStream(
+                    samplerate=self.sample_rate, device=self.audio_device, channels=self.channels, callback=self._sd_callback
+                ):
+                    while self.recording:
+                        file.write(self.q.get())

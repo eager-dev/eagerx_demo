@@ -11,13 +11,9 @@ documentation = "https://eagerx.readthedocs.io/en/master/"
 [tool.poetry.dependencies]
 python = "^3.8, <3.9"
 eagerx = "^0.1.38"
-eagerx-franka = "^0.0.4"
 clip = { git = "https://github.com/openai/clip.git", branch = "main" }
 openai = "^0.22.1"
-gdown = "3.13.1"
 ftfy = "^6.1.1"
-torch = {version = "^1.10.2", source = "torch"}
-torchvision = {version = "^0.11.3", source = "torch"}
 regex = "^2022.8.17"
 imageio = "2.9.0"
 imageio-ffmpeg = "0.4.5"
@@ -30,6 +26,10 @@ wandb = "0.10.15"
 transforms3d = "^0.4.1"
 protobuf = "<4"
 gym = "^0.26.2"
+sounddevice = "^0.4.6"
+openai-whisper = "^20230314"
+soundfile = "^0.12.1"
+pynput = "^1.7.6"
 
 
 [tool.poetry.dev-dependencies]

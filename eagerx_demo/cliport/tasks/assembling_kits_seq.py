@@ -28,9 +28,9 @@ class AssemblingKitsSeqUnseenColors(Task):
 
         # Add kit.
         kit_size = (0.28, 0.2, 0.005)
-        kit_urdf = 'kitting/kit.urdf'
+        kit_urdf = "kitting/kit.urdf"
         kit_pose = self.get_random_pose(env, kit_size)
-        env.add_object(kit_urdf, kit_pose, 'fixed')
+        env.add_object(kit_urdf, kit_pose, "fixed")
 
         # Shape Names:
         shapes = {
@@ -57,7 +57,7 @@ class AssemblingKitsSeqUnseenColors(Task):
         }
 
         n_objects = 5
-        if self.mode == 'train':
+        if self.mode == "train":
             obj_shapes = np.random.choice(self.train_set, n_objects)
         else:
             if self.homogeneous:
@@ -70,28 +70,48 @@ class AssemblingKitsSeqUnseenColors(Task):
         colors = [utils.COLORS[cn] for cn in color_names]
 
         symmetry = [
-            2 * np.pi, 2 * np.pi, 2 * np.pi / 3, np.pi / 2, np.pi / 2, 2 * np.pi,
-            np.pi, 2 * np.pi / 5, np.pi, np.pi / 2, 2 * np.pi / 5, 0, 2 * np.pi,
-            2 * np.pi, 2 * np.pi, 2 * np.pi, 0, 2 * np.pi / 6, 2 * np.pi, 2 * np.pi
+            2 * np.pi,
+            2 * np.pi,
+            2 * np.pi / 3,
+            np.pi / 2,
+            np.pi / 2,
+            2 * np.pi,
+            np.pi,
+            2 * np.pi / 5,
+            np.pi,
+            np.pi / 2,
+            2 * np.pi / 5,
+            0,
+            2 * np.pi,
+            2 * np.pi,
+            2 * np.pi,
+            2 * np.pi,
+            0,
+            2 * np.pi / 6,
+            2 * np.pi,
+            2 * np.pi,
         ]
 
         # Build kit.
         targets = []
         targets_spatial_desc = []
-        targ_pos = [[-0.09, 0.045, 0.0014], [0, 0.045, 0.0014],
-                    [0.09, 0.045, 0.0014], [-0.045, -0.045, 0.0014],
-                    [0.045, -0.045, 0.0014]]
-        template = 'kitting/object-template.urdf'
+        targ_pos = [
+            [-0.09, 0.045, 0.0014],
+            [0, 0.045, 0.0014],
+            [0.09, 0.045, 0.0014],
+            [-0.045, -0.045, 0.0014],
+            [0.045, -0.045, 0.0014],
+        ]
+        template = "kitting/object-template.urdf"
         for i in range(n_objects):
-            shape = os.path.join(self.assets_root, 'kitting',
-                                 f'{obj_shapes[i]:02d}.obj')
+            shape = os.path.join(self.assets_root, "kitting", f"{obj_shapes[i]:02d}.obj")
             scale = [0.003, 0.003, 0.0001]  # .0005
             pos = utils.apply(kit_pose, targ_pos[i])
             theta = np.random.rand() * 2 * np.pi
             rot = utils.eulerXYZ_to_quatXYZW((0, 0, theta))
-            replace = {'FNAME': (shape,), 'SCALE': scale, 'COLOR': (0.2, 0.2, 0.2)}
+            replace = {"FNAME": (shape,), "SCALE": scale, "COLOR": (0.2, 0.2, 0.2)}
             urdf = self.fill_template(template, replace)
-            env.add_object(urdf, (pos, rot), 'fixed')
+            env.add_object(urdf, (pos, rot), "fixed")
             if os.path.exists(urdf):
                 os.remove(urdf)
             targets.append((pos, rot))
@@ -102,9 +122,9 @@ class AssemblingKitsSeqUnseenColors(Task):
                 duplicate_shapes = [j for j, o in enumerate(obj_shapes) if i != j and o == shape_type]
                 other_poses = [utils.apply(kit_pose, targ_pos[d]) for d in duplicate_shapes]
 
-                if all(pos[0] < op[0] and abs(pos[0]-op[0]) > abs(pos[1]-op[1]) for op in other_poses):
+                if all(pos[0] < op[0] and abs(pos[0] - op[0]) > abs(pos[1] - op[1]) for op in other_poses):
                     spatial_desc = "top "
-                elif all(pos[0] > op[0] and abs(pos[0]-op[0]) > abs(pos[1]-op[1]) for op in other_poses):
+                elif all(pos[0] > op[0] and abs(pos[0] - op[0]) > abs(pos[1] - op[1]) for op in other_poses):
                     spatial_desc = "bottom "
                 elif all(pos[1] < op[1] for op in other_poses):
                     spatial_desc = "left "
@@ -124,10 +144,10 @@ class AssemblingKitsSeqUnseenColors(Task):
             shape = obj_shapes[i]
             size = (0.08, 0.08, 0.02)
             pose = self.get_random_pose(env, size)
-            fname = f'{shape:02d}.obj'
-            fname = os.path.join(self.assets_root, 'kitting', fname)
+            fname = f"{shape:02d}.obj"
+            fname = os.path.join(self.assets_root, "kitting", fname)
             scale = [0.003, 0.003, 0.001]
-            replace = {'FNAME': (fname,), 'SCALE': scale, 'COLOR': colors[i]}
+            replace = {"FNAME": (fname,), "SCALE": scale, "COLOR": colors[i]}
             urdf = self.fill_template(template, replace)
             block_id = env.add_object(urdf, pose)
             if os.path.exists(urdf):
@@ -140,15 +160,14 @@ class AssemblingKitsSeqUnseenColors(Task):
         target_idxs = list(range(n_objects))
         np.random.shuffle(target_idxs)
         for i in target_idxs:
-            self.goals.append(([objects[i]], np.ones((1, 1)), [targets[i]],
-                                False, True, 'pose', None, 1 / n_objects))
-            self.lang_goals.append(self.lang_template.format(color=color_names[i],
-                                                             obj=shapes[obj_shapes[i]],
-                                                             loc=targets_spatial_desc[i]))
+            self.goals.append(([objects[i]], np.ones((1, 1)), [targets[i]], False, True, "pose", None, 1 / n_objects))
+            self.lang_goals.append(
+                self.lang_template.format(color=color_names[i], obj=shapes[obj_shapes[i]], loc=targets_spatial_desc[i])
+            )
         self.max_steps = n_objects
 
     def get_colors(self):
-        return utils.TRAIN_COLORS if self.mode == 'train' else utils.EVAL_COLORS
+        return utils.TRAIN_COLORS if self.mode == "train" else utils.EVAL_COLORS
 
 
 class AssemblingKitsSeqSeenColors(AssemblingKitsSeqUnseenColors):
@@ -169,4 +188,3 @@ class AssemblingKitsSeqFull(AssemblingKitsSeqUnseenColors):
     def get_colors(self):
         all_colors = list(set(utils.TRAIN_COLORS) | set(utils.EVAL_COLORS))
         return all_colors
-

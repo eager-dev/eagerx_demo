@@ -6,6 +6,7 @@ import eagerx_demo.cliport.utils.utils as utils
 
 from eagerx_demo.cliport.models.resnet import ConvBlock, IdentityBlock
 
+
 class ResNet45_10s(nn.Module):
     def __init__(self, input_shape, output_dim, cfg, device, preprocess):
         super(ResNet45_10s, self).__init__()
@@ -14,7 +15,7 @@ class ResNet45_10s(nn.Module):
         self.output_dim = output_dim
         self.cfg = cfg
         self.device = device
-        self.batchnorm = self.cfg['train']['batchnorm']
+        self.batchnorm = self.cfg["train"]["batchnorm"]
         self.preprocess = preprocess
 
         self._make_layers()
@@ -86,14 +87,14 @@ class ResNet45_10s(nn.Module):
 
         # conv2
         self.conv2 = nn.Sequential(
-            ConvBlock(32, [16, 16, self.output_dim], kernel_size=3, stride=1,
-                      final_relu=False, batchnorm=self.batchnorm),
-            IdentityBlock(self.output_dim, [16, 16, self.output_dim], kernel_size=3, stride=1,
-                          final_relu=False, batchnorm=self.batchnorm)
+            ConvBlock(32, [16, 16, self.output_dim], kernel_size=3, stride=1, final_relu=False, batchnorm=self.batchnorm),
+            IdentityBlock(
+                self.output_dim, [16, 16, self.output_dim], kernel_size=3, stride=1, final_relu=False, batchnorm=self.batchnorm
+            ),
         )
 
     def forward(self, x):
-        x = self.preprocess(x, dist='transporter')
+        x = self.preprocess(x, dist="transporter")
         in_shape = x.shape
 
         # encoder
@@ -106,7 +107,7 @@ class ResNet45_10s(nn.Module):
             im.append(x)
             x = layer(x)
 
-        x = F.interpolate(x, size=(in_shape[-2], in_shape[-1]), mode='bilinear')
+        x = F.interpolate(x, size=(in_shape[-2], in_shape[-1]), mode="bilinear")
         return x, im
 
 

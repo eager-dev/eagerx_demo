@@ -28,12 +28,12 @@ class AssemblingKits(Task):
 
         # Add kit.
         kit_size = (0.28, 0.2, 0.005)
-        kit_urdf = 'kitting/kit.urdf'
+        kit_urdf = "kitting/kit.urdf"
         kit_pose = self.get_random_pose(env, kit_size)
-        env.add_object(kit_urdf, kit_pose, 'fixed')
+        env.add_object(kit_urdf, kit_pose, "fixed")
 
         n_objects = 5
-        if self.mode == 'train':
+        if self.mode == "train":
             obj_shapes = np.random.choice(self.train_set, n_objects)
         else:
             if self.homogeneous:
@@ -42,32 +42,55 @@ class AssemblingKits(Task):
                 obj_shapes = np.random.choice(self.test_set, n_objects)
 
         colors = [
-            utils.COLORS['purple'], utils.COLORS['blue'], utils.COLORS['green'],
-            utils.COLORS['yellow'], utils.COLORS['red']
+            utils.COLORS["purple"],
+            utils.COLORS["blue"],
+            utils.COLORS["green"],
+            utils.COLORS["yellow"],
+            utils.COLORS["red"],
         ]
 
         symmetry = [
-            2 * np.pi, 2 * np.pi, 2 * np.pi / 3, np.pi / 2, np.pi / 2, 2 * np.pi,
-            np.pi, 2 * np.pi / 5, np.pi, np.pi / 2, 2 * np.pi / 5, 0, 2 * np.pi,
-            2 * np.pi, 2 * np.pi, 2 * np.pi, 0, 2 * np.pi / 6, 2 * np.pi, 2 * np.pi
+            2 * np.pi,
+            2 * np.pi,
+            2 * np.pi / 3,
+            np.pi / 2,
+            np.pi / 2,
+            2 * np.pi,
+            np.pi,
+            2 * np.pi / 5,
+            np.pi,
+            np.pi / 2,
+            2 * np.pi / 5,
+            0,
+            2 * np.pi,
+            2 * np.pi,
+            2 * np.pi,
+            2 * np.pi,
+            0,
+            2 * np.pi / 6,
+            2 * np.pi,
+            2 * np.pi,
         ]
 
         # Build kit.
         targets = []
-        targ_pos = [[-0.09, 0.045, 0.0014], [0, 0.045, 0.0014],
-                    [0.09, 0.045, 0.0014], [-0.045, -0.045, 0.0014],
-                    [0.045, -0.045, 0.0014]]
-        template = 'kitting/object-template.urdf'
+        targ_pos = [
+            [-0.09, 0.045, 0.0014],
+            [0, 0.045, 0.0014],
+            [0.09, 0.045, 0.0014],
+            [-0.045, -0.045, 0.0014],
+            [0.045, -0.045, 0.0014],
+        ]
+        template = "kitting/object-template.urdf"
         for i in range(n_objects):
-            shape = os.path.join(self.assets_root, 'kitting',
-                                 f'{obj_shapes[i]:02d}.obj')
+            shape = os.path.join(self.assets_root, "kitting", f"{obj_shapes[i]:02d}.obj")
             scale = [0.003, 0.003, 0.0001]  # .0005
             pos = utils.apply(kit_pose, targ_pos[i])
             theta = np.random.rand() * 2 * np.pi
             rot = utils.eulerXYZ_to_quatXYZW((0, 0, theta))
-            replace = {'FNAME': (shape,), 'SCALE': scale, 'COLOR': (0.2, 0.2, 0.2)}
+            replace = {"FNAME": (shape,), "SCALE": scale, "COLOR": (0.2, 0.2, 0.2)}
             urdf = self.fill_template(template, replace)
-            env.add_object(urdf, (pos, rot), 'fixed')
+            env.add_object(urdf, (pos, rot), "fixed")
             if os.path.exists(urdf):
                 os.remove(urdf)
             targets.append((pos, rot))
@@ -80,10 +103,10 @@ class AssemblingKits(Task):
             shape = obj_shapes[i]
             size = (0.08, 0.08, 0.02)
             pose = self.get_random_pose(env, size)
-            fname = f'{shape:02d}.obj'
-            fname = os.path.join(self.assets_root, 'kitting', fname)
+            fname = f"{shape:02d}.obj"
+            fname = os.path.join(self.assets_root, "kitting", fname)
             scale = [0.003, 0.003, 0.001]  # .0005
-            replace = {'FNAME': (fname,), 'SCALE': scale, 'COLOR': colors[i]}
+            replace = {"FNAME": (fname,), "SCALE": scale, "COLOR": colors[i]}
             urdf = self.fill_template(template, replace)
             block_id = env.add_object(urdf, pose)
             if os.path.exists(urdf):
@@ -108,7 +131,7 @@ class AssemblingKits(Task):
         # print(matches)
         # print(targets)
         # exit()
-        self.goals.append((objects, matches, targets, False, True, 'pose', None, 1))
+        self.goals.append((objects, matches, targets, False, True, "pose", None, 1))
         self.lang_goals.append(self.lang_template)
         # goal = Goal(objects, syms, targets)
         # metric = Metric('pose-matches', None, 1.)
@@ -123,7 +146,6 @@ class AssemblingKitsEasy(AssemblingKits):
     def __init__(self):
         super().__init__()
         self.rot_eps = np.deg2rad(30)
-        self.train_set = np.int32(
-            [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19])
+        self.train_set = np.int32([0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19])
         self.test_set = np.int32([3, 11])
         self.homogeneous = True

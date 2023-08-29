@@ -5,11 +5,10 @@ from absl.testing import parameterized
 from eagerx_demo.cliport import tasks
 from eagerx_demo.cliport.environments import environment
 
-ASSETS_PATH = 'cliport/environments/assets/'
+ASSETS_PATH = "cliport/environments/assets/"
 
 
 class TaskTest(parameterized.TestCase):
-
     def _create_env(self):
         assets_root = ASSETS_PATH
         env = environment.Environment(assets_root)
@@ -27,120 +26,155 @@ class TaskTest(parameterized.TestCase):
             if done:
                 break
 
-    @parameterized.named_parameters((
-    # demo conditioned
-            'AlignBoxCorner',
+    @parameterized.named_parameters(
+        (
+            # demo conditioned
+            "AlignBoxCorner",
             tasks.AlignBoxCorner(),
-    ), (
-            'AssemblingKits',
+        ),
+        (
+            "AssemblingKits",
             tasks.AssemblingKits(),
-    ), (
-            'AssemblingKitsEasy',
+        ),
+        (
+            "AssemblingKitsEasy",
             tasks.AssemblingKitsEasy(),
-    ), (
-            'BlockInsertion',
+        ),
+        (
+            "BlockInsertion",
             tasks.BlockInsertion(),
-    ), (
-            'ManipulatingRope',
+        ),
+        (
+            "ManipulatingRope",
             tasks.ManipulatingRope(),
-    ), (
-            'PackingBoxes',
+        ),
+        (
+            "PackingBoxes",
             tasks.PackingBoxes(),
-    ), (
-            'PalletizingBoxes',
+        ),
+        (
+            "PalletizingBoxes",
             tasks.PalletizingBoxes(),
-    ), (
-            'PlaceRedInGreen',
+        ),
+        (
+            "PlaceRedInGreen",
             tasks.PlaceRedInGreen(),
-    ), (
-            'StackBlockPyramid',
+        ),
+        (
+            "StackBlockPyramid",
             tasks.StackBlockPyramid(),
-    ), (
-            'SweepingPiles',
+        ),
+        (
+            "SweepingPiles",
             tasks.SweepingPiles(),
-    ), (
-            'TowersOfHanoi',
+        ),
+        (
+            "TowersOfHanoi",
             tasks.TowersOfHanoi(),
-
-    # goal conditioned
-    ), (
-            'AlignRope',
+            # goal conditioned
+        ),
+        (
+            "AlignRope",
             tasks.AlignRope(),
-    ), (
-            'AssemblingKitsSeqSeenColors',
+        ),
+        (
+            "AssemblingKitsSeqSeenColors",
             tasks.AssemblingKitsSeqSeenColors(),
-    ), (
-            'AssemblingKitsSeqUnseenColors',
+        ),
+        (
+            "AssemblingKitsSeqUnseenColors",
             tasks.AssemblingKitsSeqUnseenColors(),
-    ), (
-            'AssemblingKitsSeqFull',
+        ),
+        (
+            "AssemblingKitsSeqFull",
             tasks.AssemblingKitsSeqFull(),
-    ), (
-            'PackingShapes',
+        ),
+        (
+            "PackingShapes",
             tasks.PackingShapes(),
-    ), (
-            'PackingBoxesPairsSeenColors',
+        ),
+        (
+            "PackingBoxesPairsSeenColors",
             tasks.PackingBoxesPairsSeenColors(),
-    ), (
-            'PackingBoxesPairsUnseenColors',
+        ),
+        (
+            "PackingBoxesPairsUnseenColors",
             tasks.PackingBoxesPairsUnseenColors(),
-    ), (
-            'PackingBoxesPairsFull',
+        ),
+        (
+            "PackingBoxesPairsFull",
             tasks.PackingBoxesPairsFull(),
-    ), (
-            'PackingSeenGoogleObjectsSeq',
+        ),
+        (
+            "PackingSeenGoogleObjectsSeq",
             tasks.PackingSeenGoogleObjectsSeq(),
-    ), (
-            'PackingUnseenGoogleObjectsSeq',
+        ),
+        (
+            "PackingUnseenGoogleObjectsSeq",
             tasks.PackingUnseenGoogleObjectsSeq(),
-    ), (
-            'PackingSeenGoogleObjectsGroup',
+        ),
+        (
+            "PackingSeenGoogleObjectsGroup",
             tasks.PackingSeenGoogleObjectsGroup(),
-    ), (
-            'PackingUnseenGoogleObjectsGroup',
+        ),
+        (
+            "PackingUnseenGoogleObjectsGroup",
             tasks.PackingUnseenGoogleObjectsGroup(),
-    ), (
-            'PutBlockInBowlSeenColors',
+        ),
+        (
+            "PutBlockInBowlSeenColors",
             tasks.PutBlockInBowlSeenColors(),
-    ), (
-            'PutBlockInBowlUnseenColors',
+        ),
+        (
+            "PutBlockInBowlUnseenColors",
             tasks.PutBlockInBowlUnseenColors(),
-    ), (
-            'PutBlockInBowlFull',
+        ),
+        (
+            "PutBlockInBowlFull",
             tasks.PutBlockInBowlFull(),
-    ), (
-            'StackBlockPyramidSeqSeenColors',
+        ),
+        (
+            "StackBlockPyramidSeqSeenColors",
             tasks.StackBlockPyramidSeqSeenColors(),
-    ), (
-            'StackBlockPyramidSeqUnseenColors',
+        ),
+        (
+            "StackBlockPyramidSeqUnseenColors",
             tasks.StackBlockPyramidSeqUnseenColors(),
-    ), (
-            'StackBlockPyramidSeqFull',
+        ),
+        (
+            "StackBlockPyramidSeqFull",
             tasks.StackBlockPyramidSeqFull(),
-    ), (
-            'SeparatingPilesSeenColors',
+        ),
+        (
+            "SeparatingPilesSeenColors",
             tasks.SeparatingPilesUnseenColors(),
-    ), (
-            'SeparatingPilesUnseenColors',
+        ),
+        (
+            "SeparatingPilesUnseenColors",
             tasks.SeparatingPilesUnseenColors(),
-    ), (
-            'SeparatingPilesFull',
+        ),
+        (
+            "SeparatingPilesFull",
             tasks.SeparatingPilesFull(),
-    ), (
-            'TowersOfHanoiSeqSeenColors',
+        ),
+        (
+            "TowersOfHanoiSeqSeenColors",
             tasks.TowersOfHanoiSeqSeenColors(),
-    ), (
-            'TowersOfHanoiSeqUnseenColors',
+        ),
+        (
+            "TowersOfHanoiSeqUnseenColors",
             tasks.TowersOfHanoiSeqUnseenColors(),
-    ), (
-            'TowersOfHanoiSeqFull',
+        ),
+        (
+            "TowersOfHanoiSeqFull",
             tasks.TowersOfHanoiSeqFull(),
-    ))
+        ),
+    )
     def test_all_tasks(self, dvnets_task):
         env = self._create_env()
         env.set_task(dvnets_task)
         self._run_oracle_in_env(env)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     absltest.main()

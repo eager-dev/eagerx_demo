@@ -7,7 +7,7 @@ class TwoStreamTransport(Transport):
     """Two Stream Transport (a.k.a Place) module"""
 
     def __init__(self, stream_fcn, in_shape, n_rotations, crop_size, preprocess, cfg, device):
-        self.fusion_type = cfg['train']['trans_stream_fusion_type']
+        self.fusion_type = cfg["train"]["trans_stream_fusion_type"]
         super().__init__(stream_fcn, in_shape, n_rotations, crop_size, preprocess, cfg, device)
 
     def _build_nets(self):

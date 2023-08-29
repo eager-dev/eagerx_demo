@@ -31,10 +31,10 @@ class ManipulatingRope(Task):
         # Add 3-sided square.
         square_size = (length, length, 0)
         square_pose = self.get_random_pose(env, square_size)
-        square_template = 'square/square-template.urdf'
-        replace = {'DIM': (length,), 'HALF': (length / 2 - 0.005,)}
+        square_template = "square/square-template.urdf"
+        replace = {"DIM": (length,), "HALF": (length / 2 - 0.005,)}
         urdf = self.fill_template(square_template, replace)
-        env.add_object(urdf, square_pose, 'fixed')
+        env.add_object(urdf, square_pose, "fixed")
         if os.path.exists(urdf):
             os.remove(urdf)
 
@@ -55,8 +55,7 @@ class ManipulatingRope(Task):
         objects = []
         for i in range(n_parts):
             position[2] += np.linalg.norm(increment)
-            part_id = p.createMultiBody(0.1, part_shape, part_visual,
-                                        basePosition=position)
+            part_id = p.createMultiBody(0.1, part_shape, part_visual, basePosition=position)
             if parent_id > -1:
                 constraint_id = p.createConstraint(
                     parentBodyUniqueId=parent_id,
@@ -66,12 +65,13 @@ class ManipulatingRope(Task):
                     jointType=p.JOINT_POINT2POINT,
                     jointAxis=(0, 0, 0),
                     parentFramePosition=(0, 0, np.linalg.norm(increment)),
-                    childFramePosition=(0, 0, 0))
+                    childFramePosition=(0, 0, 0),
+                )
                 p.changeConstraint(constraint_id, maxForce=100)
             if (i > 0) and (i < n_parts - 1):
-                color = utils.COLORS['red'] + [1]
+                color = utils.COLORS["red"] + [1]
                 p.changeVisualShape(part_id, -1, rgbaColor=color)
-            env.obj_ids['rigid'].append(part_id)
+            env.obj_ids["rigid"].append(part_id)
             parent_id = part_id
             target_xyz = np.float32(corner0) + i * increment + increment / 2
             objects.append((part_id, (0, None)))
@@ -79,8 +79,7 @@ class ManipulatingRope(Task):
 
         matches = np.clip(np.eye(n_parts) + np.eye(n_parts)[::-1], 0, 1)
 
-        self.goals.append((objects, matches, targets,
-                           False, False, 'pose', None, 1))
+        self.goals.append((objects, matches, targets, False, False, "pose", None, 1))
         self.lang_goals.append(self.lang_template)
 
         for i in range(480):
