@@ -37,9 +37,9 @@ class SeparatingPilesUnseenColors(Task):
         while np.linalg.norm(np.array(zone2_pose[0]) - np.array(zone1_pose[0])) < 0.2:
             zone2_pose = self.get_random_pose(env, zone_size)
 
-        zone1_obj_id = env.add_object('zone/zone.urdf', zone1_pose, 'fixed')
+        zone1_obj_id = env.add_object("zone/zone.urdf", zone1_pose, "fixed")
         p.changeVisualShape(zone1_obj_id, -1, rgbaColor=zone1_color + [1])
-        zone2_obj_id = env.add_object('zone/zone.urdf', zone2_pose, 'fixed')
+        zone2_obj_id = env.add_object("zone/zone.urdf", zone2_pose, "fixed")
         p.changeVisualShape(zone2_obj_id, -1, rgbaColor=zone2_color + [1])
 
         # Choose zone
@@ -57,21 +57,20 @@ class SeparatingPilesUnseenColors(Task):
             xyz = (rx, ry, 0.01)
             theta = np.random.rand() * 2 * np.pi
             xyzw = utils.eulerXYZ_to_quatXYZW((0, 0, theta))
-            obj_id = env.add_object('block/small.urdf', (xyz, xyzw))
+            obj_id = env.add_object("block/small.urdf", (xyz, xyzw))
             p.changeVisualShape(obj_id, -1, rgbaColor=block_color + [1])
             obj_pts[obj_id] = self.get_box_object_points(obj_id)
             obj_ids.append((obj_id, (0, None)))
             targets.append([1, 0])
 
         # Goal: all small blocks must be in the correct zone zone.
-        self.goals.append((obj_ids, np.ones((50, 1)), [zone_target],
-                           True, False, 'zone',
-                           (obj_pts, [(zone_target, zone_size)]), 1))
-        self.lang_goals.append(self.lang_template.format(block_color=color_names[2],
-                                                         square_color=zone_target_color))
+        self.goals.append(
+            (obj_ids, np.ones((50, 1)), [zone_target], True, False, "zone", (obj_pts, [(zone_target, zone_size)]), 1)
+        )
+        self.lang_goals.append(self.lang_template.format(block_color=color_names[2], square_color=zone_target_color))
 
     def get_colors(self):
-        return utils.TRAIN_COLORS if self.mode == 'train' else utils.EVAL_COLORS
+        return utils.TRAIN_COLORS if self.mode == "train" else utils.EVAL_COLORS
 
 
 class SeparatingPilesSeenColors(SeparatingPilesUnseenColors):

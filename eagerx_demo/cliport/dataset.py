@@ -32,39 +32,42 @@ class RavensDataset(Dataset):
         self.sample_set = []
         self.max_seed = -1
         self.n_episodes = 0
-        self.images = self.cfg['dataset']['images']
-        self.cache = self.cfg['dataset']['cache']
+        self.images = self.cfg["dataset"]["images"]
+        self.cache = self.cfg["dataset"]["cache"]
         self.n_demos = n_demos
         self.augment = augment
 
-        self.aug_theta_sigma = self.cfg['dataset']['augment']['theta_sigma'] if 'augment' in self.cfg['dataset'] else 60  # legacy code issue: theta_sigma was newly added
+        self.aug_theta_sigma = (
+            self.cfg["dataset"]["augment"]["theta_sigma"] if "augment" in self.cfg["dataset"] else 60
+        )  # legacy code issue: theta_sigma was newly added
         self.pix_size = 0.003125
         self.in_shape = (320, 160, 6)
         self.cam_config = cameras.RealSenseD415.CONFIG
         self.bounds = np.array([[0.25, 0.75], [-0.5, 0.5], [0, 0.28]])
 
         # Track existing dataset if it exists.
-        color_path = os.path.join(self._path, 'action')
+        color_path = os.path.join(self._path, "action")
         if os.path.exists(color_path):
             for fname in sorted(os.listdir(color_path)):
-                if '.pkl' in fname:
-                    seed = int(fname[(fname.find('-') + 1):-4])
+                if ".pkl" in fname:
+                    seed = int(fname[(fname.find("-") + 1) : -4])
                     self.n_episodes += 1
                     self.max_seed = max(self.max_seed, seed)
 
         self._cache = {}
 
         if self.n_demos > 0:
-            self.images = self.cfg['dataset']['images']
-            self.cache = self.cfg['dataset']['cache']
+            self.images = self.cfg["dataset"]["images"]
+            self.cache = self.cfg["dataset"]["cache"]
 
             # Check if there sufficient demos in the dataset
             if self.n_demos > self.n_episodes:
-                raise Exception(f"Requested training on {self.n_demos} demos, but only {self.n_episodes} demos exist in the dataset path: {self._path}.")
+                raise Exception(
+                    f"Requested training on {self.n_demos} demos, but only {self.n_episodes} demos exist in the dataset path: {self._path}."
+                )
 
             episodes = np.random.choice(range(self.n_episodes), self.n_demos, False)
             self.set(episodes)
-
 
     def add(self, seed, episode):
         """Add an episode to the dataset.
@@ -75,8 +78,8 @@ class RavensDataset(Dataset):
         """
         color, depth, action, reward, info = [], [], [], [], []
         for obs, act, r, i in episode:
-            color.append(obs['color'])
-            depth.append(obs['depth'])
+            color.append(obs["color"])
+            depth.append(obs["depth"])
             action.append(act)
             reward.append(r)
             info.append(i)
@@ -88,15 +91,15 @@ class RavensDataset(Dataset):
             field_path = os.path.join(self._path, field)
             if not os.path.exists(field_path):
                 os.makedirs(field_path)
-            fname = f'{self.n_episodes:06d}-{seed}.pkl'  # -{len(episode):06d}
-            with open(os.path.join(field_path, fname), 'wb') as f:
+            fname = f"{self.n_episodes:06d}-{seed}.pkl"  # -{len(episode):06d}
+            with open(os.path.join(field_path, fname), "wb") as f:
                 pickle.dump(data, f)
 
-        dump(color, 'color')
-        dump(depth, 'depth')
-        dump(action, 'action')
-        dump(reward, 'reward')
-        dump(info, 'info')
+        dump(color, "color")
+        dump(depth, "depth")
+        dump(action, "action")
+        dump(reward, "reward")
+        dump(info, "info")
 
         self.n_episodes += 1
         self.max_seed = max(self.max_seed, seed)
@@ -118,29 +121,29 @@ class RavensDataset(Dataset):
 
             # Load sample from files.
             path = os.path.join(self._path, field)
-            data = pickle.load(open(os.path.join(path, fname), 'rb'))
+            data = pickle.load(open(os.path.join(path, fname), "rb"))
             if cache:
                 self._cache[episode_id][field] = data
             return data
 
         # Get filename and random seed used to initialize episode.
         seed = None
-        path = os.path.join(self._path, 'action')
+        path = os.path.join(self._path, "action")
         for fname in sorted(os.listdir(path)):
-            if f'{episode_id:06d}' in fname:
-                seed = int(fname[(fname.find('-') + 1):-4])
+            if f"{episode_id:06d}" in fname:
+                seed = int(fname[(fname.find("-") + 1) : -4])
 
                 # Load data.
-                color = load_field(episode_id, 'color', fname)
-                depth = load_field(episode_id, 'depth', fname)
-                action = load_field(episode_id, 'action', fname)
-                reward = load_field(episode_id, 'reward', fname)
-                info = load_field(episode_id, 'info', fname)
+                color = load_field(episode_id, "color", fname)
+                depth = load_field(episode_id, "depth", fname)
+                action = load_field(episode_id, "action", fname)
+                reward = load_field(episode_id, "reward", fname)
+                info = load_field(episode_id, "info", fname)
 
                 # Reconstruct episode.
                 episode = []
                 for i in range(len(action)):
-                    obs = {'color': color[i], 'depth': depth[i]} if images else {}
+                    obs = {"color": color[i], "depth": depth[i]} if images else {}
                     episode.append((obs, action[i], reward[i], info[i]))
                 return episode, seed
 
@@ -157,12 +160,8 @@ class RavensDataset(Dataset):
             cam_config = self.cam_config
 
         # Get color and height maps from RGB-D images.
-        cmap, hmap = utils.get_fused_heightmap(
-            obs, cam_config, self.bounds, self.pix_size)
-        img = np.concatenate((cmap,
-                              hmap[Ellipsis, None],
-                              hmap[Ellipsis, None],
-                              hmap[Ellipsis, None]), axis=2)
+        cmap, hmap = utils.get_fused_heightmap(obs, cam_config, self.bounds, self.pix_size)
+        img = np.concatenate((cmap, hmap[Ellipsis, None], hmap[Ellipsis, None], hmap[Ellipsis, None]), axis=2)
         assert img.shape == self.in_shape, img.shape
         return img
 
@@ -173,11 +172,11 @@ class RavensDataset(Dataset):
 
         p0, p1 = None, None
         p0_theta, p1_theta = None, None
-        perturb_params =  None
+        perturb_params = None
 
         if act:
-            p0_xyz, p0_xyzw = act['pose0']
-            p1_xyz, p1_xyzw = act['pose1']
+            p0_xyz, p0_xyzw = act["pose0"]
+            p1_xyz, p1_xyzw = act["pose1"]
             p0 = utils.xyz_to_pix(p0_xyz, self.bounds, self.pix_size)
             p0_theta = -np.float32(utils.quatXYZW_to_eulerXYZ(p0_xyzw)[2])
             p1 = utils.xyz_to_pix(p1_xyz, self.bounds, self.pix_size)
@@ -189,21 +188,16 @@ class RavensDataset(Dataset):
         if augment:
             img, _, (p0, p1), perturb_params = utils.perturb(img, [p0, p1], theta_sigma=self.aug_theta_sigma)
 
-        sample = {
-            'img': img,
-            'p0': p0, 'p0_theta': p0_theta,
-            'p1': p1, 'p1_theta': p1_theta,
-            'perturb_params': perturb_params
-        }
+        sample = {"img": img, "p0": p0, "p0_theta": p0_theta, "p1": p1, "p1_theta": p1_theta, "perturb_params": perturb_params}
 
         # Add language goal if available.
-        if 'lang_goal' not in info:
+        if "lang_goal" not in info:
             warnings.warn("No language goal. Defaulting to 'task completed.'")
 
-        if info and 'lang_goal' in info:
-            sample['lang_goal'] = info['lang_goal']
+        if info and "lang_goal" in info:
+            sample["lang_goal"] = info["lang_goal"]
         else:
-            sample['lang_goal'] = "task completed."
+            sample["lang_goal"] = "task completed."
 
         return sample
 
@@ -219,21 +213,16 @@ class RavensDataset(Dataset):
         if perturb_params:
             img = utils.apply_perturbation(img, perturb_params)
 
-        sample = {
-            'img': img,
-            'p0': p0, 'p0_theta': p0_theta,
-            'p1': p1, 'p1_theta': p1_theta,
-            'perturb_params': perturb_params
-        }
+        sample = {"img": img, "p0": p0, "p0_theta": p0_theta, "p1": p1, "p1_theta": p1_theta, "perturb_params": perturb_params}
 
         # Add language goal if available.
-        if 'lang_goal' not in info:
+        if "lang_goal" not in info:
             warnings.warn("No language goal. Defaulting to 'task completed.'")
 
-        if info and 'lang_goal' in info:
-            sample['lang_goal'] = info['lang_goal']
+        if info and "lang_goal" in info:
+            sample["lang_goal"] = info["lang_goal"]
         else:
-            sample['lang_goal'] = "task completed."
+            sample["lang_goal"] = "task completed."
 
         return sample
 
@@ -249,16 +238,16 @@ class RavensDataset(Dataset):
         episode, _ = self.load(episode_id, self.images, self.cache)
 
         # Is the task sequential like stack-block-pyramid-seq?
-        is_sequential_task = '-seq' in self._path.split("/")[-1]
+        is_sequential_task = "-seq" in self._path.split("/")[-1]
 
         # Return random observation action pair (and goal) from episode.
-        i = np.random.choice(range(len(episode)-1))
-        g = i+1 if is_sequential_task else -1
+        i = np.random.choice(range(len(episode) - 1))
+        g = i + 1 if is_sequential_task else -1
         sample, goal = episode[i], episode[g]
 
         # Process sample.
         sample = self.process_sample(sample, augment=self.augment)
-        goal = self.process_goal(goal, perturb_params=sample['perturb_params'])
+        goal = self.process_goal(goal, perturb_params=sample["perturb_params"])
 
         return sample, goal
 
@@ -267,424 +256,414 @@ class RavensMultiTaskDataset(RavensDataset):
 
     MULTI_TASKS = {
         # all tasks
-        'multi-all': {
-            'train': [
-                'align-box-corner',
-                'assembling-kits',
-                'block-insertion',
-                'manipulating-rope',
-                'packing-boxes',
-                'palletizing-boxes',
-                'place-red-in-green',
-                'stack-block-pyramid',
-                'sweeping-piles',
-                'towers-of-hanoi',
-                'align-rope',
-                'assembling-kits-seq-unseen-colors',
-                'packing-boxes-pairs-unseen-colors',
-                'packing-shapes',
-                'packing-unseen-google-objects-seq',
-                'packing-unseen-google-objects-group',
-                'put-block-in-bowl-unseen-colors',
-                'stack-block-pyramid-seq-unseen-colors',
-                'separating-piles-unseen-colors',
-                'towers-of-hanoi-seq-unseen-colors',
+        "multi-all": {
+            "train": [
+                "align-box-corner",
+                "assembling-kits",
+                "block-insertion",
+                "manipulating-rope",
+                "packing-boxes",
+                "palletizing-boxes",
+                "place-red-in-green",
+                "stack-block-pyramid",
+                "sweeping-piles",
+                "towers-of-hanoi",
+                "align-rope",
+                "assembling-kits-seq-unseen-colors",
+                "packing-boxes-pairs-unseen-colors",
+                "packing-shapes",
+                "packing-unseen-google-objects-seq",
+                "packing-unseen-google-objects-group",
+                "put-block-in-bowl-unseen-colors",
+                "stack-block-pyramid-seq-unseen-colors",
+                "separating-piles-unseen-colors",
+                "towers-of-hanoi-seq-unseen-colors",
             ],
-            'val': [
-                'align-box-corner',
-                'assembling-kits',
-                'block-insertion',
-                'manipulating-rope',
-                'packing-boxes',
-                'palletizing-boxes',
-                'place-red-in-green',
-                'stack-block-pyramid',
-                'sweeping-piles',
-                'towers-of-hanoi',
-                'align-rope',
-                'assembling-kits-seq-seen-colors',
-                'assembling-kits-seq-unseen-colors',
-                'packing-boxes-pairs-seen-colors',
-                'packing-boxes-pairs-unseen-colors',
-                'packing-shapes',
-                'packing-seen-google-objects-seq',
-                'packing-unseen-google-objects-seq',
-                'packing-seen-google-objects-group',
-                'packing-unseen-google-objects-group',
-                'put-block-in-bowl-seen-colors',
-                'put-block-in-bowl-unseen-colors',
-                'stack-block-pyramid-seq-seen-colors',
-                'stack-block-pyramid-seq-unseen-colors',
-                'separating-piles-seen-colors',
-                'separating-piles-unseen-colors',
-                'towers-of-hanoi-seq-seen-colors',
-                'towers-of-hanoi-seq-unseen-colors',
+            "val": [
+                "align-box-corner",
+                "assembling-kits",
+                "block-insertion",
+                "manipulating-rope",
+                "packing-boxes",
+                "palletizing-boxes",
+                "place-red-in-green",
+                "stack-block-pyramid",
+                "sweeping-piles",
+                "towers-of-hanoi",
+                "align-rope",
+                "assembling-kits-seq-seen-colors",
+                "assembling-kits-seq-unseen-colors",
+                "packing-boxes-pairs-seen-colors",
+                "packing-boxes-pairs-unseen-colors",
+                "packing-shapes",
+                "packing-seen-google-objects-seq",
+                "packing-unseen-google-objects-seq",
+                "packing-seen-google-objects-group",
+                "packing-unseen-google-objects-group",
+                "put-block-in-bowl-seen-colors",
+                "put-block-in-bowl-unseen-colors",
+                "stack-block-pyramid-seq-seen-colors",
+                "stack-block-pyramid-seq-unseen-colors",
+                "separating-piles-seen-colors",
+                "separating-piles-unseen-colors",
+                "towers-of-hanoi-seq-seen-colors",
+                "towers-of-hanoi-seq-unseen-colors",
             ],
-            'test': [
-                'align-box-corner',
-                'assembling-kits',
-                'block-insertion',
-                'manipulating-rope',
-                'packing-boxes',
-                'palletizing-boxes',
-                'place-red-in-green',
-                'stack-block-pyramid',
-                'sweeping-piles',
-                'towers-of-hanoi',
-                'align-rope',
-                'assembling-kits-seq-seen-colors',
-                'assembling-kits-seq-unseen-colors',
-                'packing-boxes-pairs-seen-colors',
-                'packing-boxes-pairs-unseen-colors',
-                'packing-shapes',
-                'packing-seen-google-objects-seq',
-                'packing-unseen-google-objects-seq',
-                'packing-seen-google-objects-group',
-                'packing-unseen-google-objects-group',
-                'put-block-in-bowl-seen-colors',
-                'put-block-in-bowl-unseen-colors',
-                'stack-block-pyramid-seq-seen-colors',
-                'stack-block-pyramid-seq-unseen-colors',
-                'separating-piles-seen-colors',
-                'separating-piles-unseen-colors',
-                'towers-of-hanoi-seq-seen-colors',
-                'towers-of-hanoi-seq-unseen-colors',
+            "test": [
+                "align-box-corner",
+                "assembling-kits",
+                "block-insertion",
+                "manipulating-rope",
+                "packing-boxes",
+                "palletizing-boxes",
+                "place-red-in-green",
+                "stack-block-pyramid",
+                "sweeping-piles",
+                "towers-of-hanoi",
+                "align-rope",
+                "assembling-kits-seq-seen-colors",
+                "assembling-kits-seq-unseen-colors",
+                "packing-boxes-pairs-seen-colors",
+                "packing-boxes-pairs-unseen-colors",
+                "packing-shapes",
+                "packing-seen-google-objects-seq",
+                "packing-unseen-google-objects-seq",
+                "packing-seen-google-objects-group",
+                "packing-unseen-google-objects-group",
+                "put-block-in-bowl-seen-colors",
+                "put-block-in-bowl-unseen-colors",
+                "stack-block-pyramid-seq-seen-colors",
+                "stack-block-pyramid-seq-unseen-colors",
+                "separating-piles-seen-colors",
+                "separating-piles-unseen-colors",
+                "towers-of-hanoi-seq-seen-colors",
+                "towers-of-hanoi-seq-unseen-colors",
             ],
         },
-
         # demo-conditioned tasks
-        'multi-demo-conditioned': {
-            'train': [
-                'align-box-corner',
-                'assembling-kits',
-                'block-insertion',
-                'manipulating-rope',
-                'packing-boxes',
-                'palletizing-boxes',
-                'place-red-in-green',
-                'stack-block-pyramid',
-                'sweeping-piles',
-                'towers-of-hanoi',
+        "multi-demo-conditioned": {
+            "train": [
+                "align-box-corner",
+                "assembling-kits",
+                "block-insertion",
+                "manipulating-rope",
+                "packing-boxes",
+                "palletizing-boxes",
+                "place-red-in-green",
+                "stack-block-pyramid",
+                "sweeping-piles",
+                "towers-of-hanoi",
             ],
-            'val': [
-                'align-box-corner',
-                'assembling-kits',
-                'block-insertion',
-                'manipulating-rope',
-                'packing-boxes',
-                'palletizing-boxes',
-                'place-red-in-green',
-                'stack-block-pyramid',
-                'sweeping-piles',
-                'towers-of-hanoi',
+            "val": [
+                "align-box-corner",
+                "assembling-kits",
+                "block-insertion",
+                "manipulating-rope",
+                "packing-boxes",
+                "palletizing-boxes",
+                "place-red-in-green",
+                "stack-block-pyramid",
+                "sweeping-piles",
+                "towers-of-hanoi",
             ],
-            'test': [
-                'align-box-corner',
-                'assembling-kits',
-                'block-insertion',
-                'manipulating-rope',
-                'packing-boxes',
-                'palletizing-boxes',
-                'place-red-in-green',
-                'stack-block-pyramid',
-                'sweeping-piles',
-                'towers-of-hanoi',
+            "test": [
+                "align-box-corner",
+                "assembling-kits",
+                "block-insertion",
+                "manipulating-rope",
+                "packing-boxes",
+                "palletizing-boxes",
+                "place-red-in-green",
+                "stack-block-pyramid",
+                "sweeping-piles",
+                "towers-of-hanoi",
             ],
         },
-
         # goal-conditioned tasks
-        'multi-language-conditioned': {
-            'train': [
-                'align-rope',
-                'assembling-kits-seq-unseen-colors', # unseen here refers to training only seen splits to be consitent with single-task setting
-                'packing-boxes-pairs-unseen-colors',
-                'packing-shapes',
-                'packing-unseen-google-objects-seq',
-                'packing-unseen-google-objects-group',
-                'put-block-in-bowl-unseen-colors',
-                'stack-block-pyramid-seq-unseen-colors',
-                'separating-piles-unseen-colors',
-                'towers-of-hanoi-seq-unseen-colors',
+        "multi-language-conditioned": {
+            "train": [
+                "align-rope",
+                "assembling-kits-seq-unseen-colors",  # unseen here refers to training only seen splits to be consitent with single-task setting
+                "packing-boxes-pairs-unseen-colors",
+                "packing-shapes",
+                "packing-unseen-google-objects-seq",
+                "packing-unseen-google-objects-group",
+                "put-block-in-bowl-unseen-colors",
+                "stack-block-pyramid-seq-unseen-colors",
+                "separating-piles-unseen-colors",
+                "towers-of-hanoi-seq-unseen-colors",
             ],
-            'val': [
-                'align-rope',
-                'assembling-kits-seq-seen-colors',
-                'assembling-kits-seq-unseen-colors',
-                'packing-boxes-pairs-seen-colors',
-                'packing-boxes-pairs-unseen-colors',
-                'packing-shapes',
-                'packing-seen-google-objects-seq',
-                'packing-unseen-google-objects-seq',
-                'packing-seen-google-objects-group',
-                'packing-unseen-google-objects-group',
-                'put-block-in-bowl-seen-colors',
-                'put-block-in-bowl-unseen-colors',
-                'stack-block-pyramid-seq-seen-colors',
-                'stack-block-pyramid-seq-unseen-colors',
-                'separating-piles-seen-colors',
-                'separating-piles-unseen-colors',
-                'towers-of-hanoi-seq-seen-colors',
-                'towers-of-hanoi-seq-unseen-colors',
+            "val": [
+                "align-rope",
+                "assembling-kits-seq-seen-colors",
+                "assembling-kits-seq-unseen-colors",
+                "packing-boxes-pairs-seen-colors",
+                "packing-boxes-pairs-unseen-colors",
+                "packing-shapes",
+                "packing-seen-google-objects-seq",
+                "packing-unseen-google-objects-seq",
+                "packing-seen-google-objects-group",
+                "packing-unseen-google-objects-group",
+                "put-block-in-bowl-seen-colors",
+                "put-block-in-bowl-unseen-colors",
+                "stack-block-pyramid-seq-seen-colors",
+                "stack-block-pyramid-seq-unseen-colors",
+                "separating-piles-seen-colors",
+                "separating-piles-unseen-colors",
+                "towers-of-hanoi-seq-seen-colors",
+                "towers-of-hanoi-seq-unseen-colors",
             ],
-            'test': [
-                'align-rope',
-                'assembling-kits-seq-seen-colors',
-                'assembling-kits-seq-unseen-colors',
-                'packing-boxes-pairs-seen-colors',
-                'packing-boxes-pairs-unseen-colors',
-                'packing-shapes',
-                'packing-seen-google-objects-seq',
-                'packing-unseen-google-objects-seq',
-                'packing-seen-google-objects-group',
-                'packing-unseen-google-objects-group',
-                'put-block-in-bowl-seen-colors',
-                'put-block-in-bowl-unseen-colors',
-                'stack-block-pyramid-seq-seen-colors',
-                'stack-block-pyramid-seq-unseen-colors',
-                'separating-piles-seen-colors',
-                'separating-piles-unseen-colors',
-                'towers-of-hanoi-seq-seen-colors',
-                'towers-of-hanoi-seq-unseen-colors',
+            "test": [
+                "align-rope",
+                "assembling-kits-seq-seen-colors",
+                "assembling-kits-seq-unseen-colors",
+                "packing-boxes-pairs-seen-colors",
+                "packing-boxes-pairs-unseen-colors",
+                "packing-shapes",
+                "packing-seen-google-objects-seq",
+                "packing-unseen-google-objects-seq",
+                "packing-seen-google-objects-group",
+                "packing-unseen-google-objects-group",
+                "put-block-in-bowl-seen-colors",
+                "put-block-in-bowl-unseen-colors",
+                "stack-block-pyramid-seq-seen-colors",
+                "stack-block-pyramid-seq-unseen-colors",
+                "separating-piles-seen-colors",
+                "separating-piles-unseen-colors",
+                "towers-of-hanoi-seq-seen-colors",
+                "towers-of-hanoi-seq-unseen-colors",
             ],
         },
-
-
         ##### multi-attr tasks
-        'multi-attr-align-rope': {
-            'train': [
-                'assembling-kits-seq-full',
-                'packing-boxes-pairs-full',
-                'packing-shapes',
-                'packing-seen-google-objects-seq',
-                'packing-seen-google-objects-group',
-                'put-block-in-bowl-full',
-                'stack-block-pyramid-seq-full',
-                'separating-piles-full',
-                'towers-of-hanoi-seq-full',
+        "multi-attr-align-rope": {
+            "train": [
+                "assembling-kits-seq-full",
+                "packing-boxes-pairs-full",
+                "packing-shapes",
+                "packing-seen-google-objects-seq",
+                "packing-seen-google-objects-group",
+                "put-block-in-bowl-full",
+                "stack-block-pyramid-seq-full",
+                "separating-piles-full",
+                "towers-of-hanoi-seq-full",
             ],
-            'val': [
-                'align-rope',
+            "val": [
+                "align-rope",
             ],
-            'test': [
-                'align-rope',
+            "test": [
+                "align-rope",
             ],
-            'attr_train_task': None,
+            "attr_train_task": None,
         },
-
-        'multi-attr-packing-shapes': {
-            'train': [
-                'align-rope',
-                'assembling-kits-seq-full',
-                'packing-boxes-pairs-full',
-                'packing-seen-google-objects-seq',
-                'packing-seen-google-objects-group',
-                'put-block-in-bowl-full',
-                'stack-block-pyramid-seq-full',
-                'separating-piles-full',
-                'towers-of-hanoi-seq-full',
+        "multi-attr-packing-shapes": {
+            "train": [
+                "align-rope",
+                "assembling-kits-seq-full",
+                "packing-boxes-pairs-full",
+                "packing-seen-google-objects-seq",
+                "packing-seen-google-objects-group",
+                "put-block-in-bowl-full",
+                "stack-block-pyramid-seq-full",
+                "separating-piles-full",
+                "towers-of-hanoi-seq-full",
             ],
-            'val': [
-                'packing-shapes',
+            "val": [
+                "packing-shapes",
             ],
-            'test': [
-                'packing-shapes',
+            "test": [
+                "packing-shapes",
             ],
-            'attr_train_task': None,
+            "attr_train_task": None,
         },
-
-        'multi-attr-assembling-kits-seq-unseen-colors': {
-            'train': [
-                'align-rope',
-                'assembling-kits-seq-seen-colors', # seen only
-                'packing-boxes-pairs-full',
-                'packing-shapes',
-                'packing-seen-google-objects-seq',
-                'packing-seen-google-objects-group',
-                'put-block-in-bowl-full',
-                'stack-block-pyramid-seq-full',
-                'separating-piles-full',
-                'towers-of-hanoi-seq-full',
+        "multi-attr-assembling-kits-seq-unseen-colors": {
+            "train": [
+                "align-rope",
+                "assembling-kits-seq-seen-colors",  # seen only
+                "packing-boxes-pairs-full",
+                "packing-shapes",
+                "packing-seen-google-objects-seq",
+                "packing-seen-google-objects-group",
+                "put-block-in-bowl-full",
+                "stack-block-pyramid-seq-full",
+                "separating-piles-full",
+                "towers-of-hanoi-seq-full",
             ],
-            'val': [
-                'assembling-kits-seq-unseen-colors',
+            "val": [
+                "assembling-kits-seq-unseen-colors",
             ],
-            'test': [
-                'assembling-kits-seq-unseen-colors',
+            "test": [
+                "assembling-kits-seq-unseen-colors",
             ],
-            'attr_train_task': 'assembling-kits-seq-seen-colors',
+            "attr_train_task": "assembling-kits-seq-seen-colors",
         },
-
-        'multi-attr-packing-boxes-pairs-unseen-colors': {
-            'train': [
-                'align-rope',
-                'assembling-kits-seq-full',
-                'packing-boxes-pairs-seen-colors', # seen only
-                'packing-shapes',
-                'packing-seen-google-objects-seq',
-                'packing-seen-google-objects-group',
-                'put-block-in-bowl-full',
-                'stack-block-pyramid-seq-full',
-                'separating-piles-full',
-                'towers-of-hanoi-seq-full',
+        "multi-attr-packing-boxes-pairs-unseen-colors": {
+            "train": [
+                "align-rope",
+                "assembling-kits-seq-full",
+                "packing-boxes-pairs-seen-colors",  # seen only
+                "packing-shapes",
+                "packing-seen-google-objects-seq",
+                "packing-seen-google-objects-group",
+                "put-block-in-bowl-full",
+                "stack-block-pyramid-seq-full",
+                "separating-piles-full",
+                "towers-of-hanoi-seq-full",
             ],
-            'val': [
-                'packing-boxes-pairs-unseen-colors',
+            "val": [
+                "packing-boxes-pairs-unseen-colors",
             ],
-            'test': [
-                'packing-boxes-pairs-unseen-colors',
+            "test": [
+                "packing-boxes-pairs-unseen-colors",
             ],
-            'attr_train_task': 'packing-boxes-pairs-seen-colors',
+            "attr_train_task": "packing-boxes-pairs-seen-colors",
         },
-
-        'multi-attr-packing-unseen-google-objects-seq': {
-            'train': [
-                'align-rope',
-                'assembling-kits-seq-full',
-                'packing-boxes-pairs-full',
-                'packing-shapes',
-                'packing-seen-google-objects-group',
-                'put-block-in-bowl-full',
-                'stack-block-pyramid-seq-full',
-                'separating-piles-full',
-                'towers-of-hanoi-seq-full',
+        "multi-attr-packing-unseen-google-objects-seq": {
+            "train": [
+                "align-rope",
+                "assembling-kits-seq-full",
+                "packing-boxes-pairs-full",
+                "packing-shapes",
+                "packing-seen-google-objects-group",
+                "put-block-in-bowl-full",
+                "stack-block-pyramid-seq-full",
+                "separating-piles-full",
+                "towers-of-hanoi-seq-full",
             ],
-            'val': [
-                'packing-unseen-google-objects-seq',
+            "val": [
+                "packing-unseen-google-objects-seq",
             ],
-            'test': [
-                'packing-unseen-google-objects-seq',
+            "test": [
+                "packing-unseen-google-objects-seq",
             ],
-            'attr_train_task': 'packing-seen-google-objects-group',
+            "attr_train_task": "packing-seen-google-objects-group",
         },
-
-        'multi-attr-packing-unseen-google-objects-group': {
-            'train': [
-                'align-rope',
-                'assembling-kits-seq-full',
-                'packing-boxes-pairs-full',
-                'packing-shapes',
-                'packing-seen-google-objects-seq',
-                'put-block-in-bowl-full',
-                'stack-block-pyramid-seq-full',
-                'separating-piles-full',
-                'towers-of-hanoi-seq-full',
+        "multi-attr-packing-unseen-google-objects-group": {
+            "train": [
+                "align-rope",
+                "assembling-kits-seq-full",
+                "packing-boxes-pairs-full",
+                "packing-shapes",
+                "packing-seen-google-objects-seq",
+                "put-block-in-bowl-full",
+                "stack-block-pyramid-seq-full",
+                "separating-piles-full",
+                "towers-of-hanoi-seq-full",
             ],
-            'val': [
-                'packing-unseen-google-objects-group',
+            "val": [
+                "packing-unseen-google-objects-group",
             ],
-            'test': [
-                'packing-unseen-google-objects-group',
+            "test": [
+                "packing-unseen-google-objects-group",
             ],
-            'attr_train_task': 'packing-seen-google-objects-seq',
+            "attr_train_task": "packing-seen-google-objects-seq",
         },
-
-        'multi-attr-put-block-in-bowl-unseen-colors': {
-            'train': [
-                'align-rope',
-                'assembling-kits-seq-full',
-                'packing-boxes-pairs-full',
-                'packing-shapes',
-                'packing-seen-google-objects-seq',
-                'packing-seen-google-objects-group',
-                'put-block-in-bowl-seen-colors', # seen only
-                'stack-block-pyramid-seq-full',
-                'separating-piles-full',
-                'towers-of-hanoi-seq-full',
+        "multi-attr-put-block-in-bowl-unseen-colors": {
+            "train": [
+                "align-rope",
+                "assembling-kits-seq-full",
+                "packing-boxes-pairs-full",
+                "packing-shapes",
+                "packing-seen-google-objects-seq",
+                "packing-seen-google-objects-group",
+                "put-block-in-bowl-seen-colors",  # seen only
+                "stack-block-pyramid-seq-full",
+                "separating-piles-full",
+                "towers-of-hanoi-seq-full",
             ],
-            'val': [
-                'put-block-in-bowl-unseen-colors',
+            "val": [
+                "put-block-in-bowl-unseen-colors",
             ],
-            'test': [
-                'put-block-in-bowl-unseen-colors',
+            "test": [
+                "put-block-in-bowl-unseen-colors",
             ],
-            'attr_train_task': 'put-block-in-bowl-seen-colors',
+            "attr_train_task": "put-block-in-bowl-seen-colors",
         },
-
-        'multi-attr-stack-block-pyramid-seq-unseen-colors': {
-            'train': [
-                'align-rope',
-                'assembling-kits-seq-full',
-                'packing-boxes-pairs-full',
-                'packing-shapes',
-                'packing-seen-google-objects-seq',
-                'packing-seen-google-objects-group',
-                'put-block-in-bowl-full',
-                'stack-block-pyramid-seq-seen-colors', # seen only
-                'separating-piles-full',
-                'towers-of-hanoi-seq-full',
+        "multi-attr-stack-block-pyramid-seq-unseen-colors": {
+            "train": [
+                "align-rope",
+                "assembling-kits-seq-full",
+                "packing-boxes-pairs-full",
+                "packing-shapes",
+                "packing-seen-google-objects-seq",
+                "packing-seen-google-objects-group",
+                "put-block-in-bowl-full",
+                "stack-block-pyramid-seq-seen-colors",  # seen only
+                "separating-piles-full",
+                "towers-of-hanoi-seq-full",
             ],
-            'val': [
-                'stack-block-pyramid-seq-unseen-colors',
+            "val": [
+                "stack-block-pyramid-seq-unseen-colors",
             ],
-            'test': [
-                'stack-block-pyramid-seq-unseen-colors',
+            "test": [
+                "stack-block-pyramid-seq-unseen-colors",
             ],
-            'attr_train_task': 'stack-block-pyramid-seq-seen-colors',
+            "attr_train_task": "stack-block-pyramid-seq-seen-colors",
         },
-
-        'multi-attr-separating-piles-unseen-colors': {
-            'train': [
-                'align-rope',
-                'assembling-kits-seq-full',
-                'packing-boxes-pairs-full',
-                'packing-shapes',
-                'packing-seen-google-objects-seq',
-                'packing-seen-google-objects-group',
-                'put-block-in-bowl-full',
-                'stack-block-pyramid-seq-full',
-                'separating-piles-seen-colors', # seen only
-                'towers-of-hanoi-seq-full',
+        "multi-attr-separating-piles-unseen-colors": {
+            "train": [
+                "align-rope",
+                "assembling-kits-seq-full",
+                "packing-boxes-pairs-full",
+                "packing-shapes",
+                "packing-seen-google-objects-seq",
+                "packing-seen-google-objects-group",
+                "put-block-in-bowl-full",
+                "stack-block-pyramid-seq-full",
+                "separating-piles-seen-colors",  # seen only
+                "towers-of-hanoi-seq-full",
             ],
-            'val': [
-                'separating-piles-unseen-colors',
+            "val": [
+                "separating-piles-unseen-colors",
             ],
-            'test': [
-                'separating-piles-unseen-colors',
+            "test": [
+                "separating-piles-unseen-colors",
             ],
-            'attr_train_task': 'separating-piles-seen-colors',
+            "attr_train_task": "separating-piles-seen-colors",
         },
-
-        'multi-attr-towers-of-hanoi-seq-unseen-colors': {
-            'train': [
-                'align-rope',
-                'assembling-kits-seq-full',
-                'packing-boxes-pairs-full',
-                'packing-shapes',
-                'packing-seen-google-objects-seq',
-                'packing-seen-google-objects-group',
-                'put-block-in-bowl-full',
-                'stack-block-pyramid-seq-full',
-                'separating-piles-full',
-                'towers-of-hanoi-seq-seen-colors', # seen only
+        "multi-attr-towers-of-hanoi-seq-unseen-colors": {
+            "train": [
+                "align-rope",
+                "assembling-kits-seq-full",
+                "packing-boxes-pairs-full",
+                "packing-shapes",
+                "packing-seen-google-objects-seq",
+                "packing-seen-google-objects-group",
+                "put-block-in-bowl-full",
+                "stack-block-pyramid-seq-full",
+                "separating-piles-full",
+                "towers-of-hanoi-seq-seen-colors",  # seen only
             ],
-            'val': [
-                'towers-of-hanoi-seq-unseen-colors',
+            "val": [
+                "towers-of-hanoi-seq-unseen-colors",
             ],
-            'test': [
-                'towers-of-hanoi-seq-unseen-colors',
+            "test": [
+                "towers-of-hanoi-seq-unseen-colors",
             ],
-            'attr_train_task': 'towers-of-hanoi-seq-seen-colors',
+            "attr_train_task": "towers-of-hanoi-seq-seen-colors",
         },
-
     }
-    def __init__(self, path, cfg, group='multi-all',
-                 mode='train', n_demos=100, augment=False):
+
+    def __init__(self, path, cfg, group="multi-all", mode="train", n_demos=100, augment=False):
         """A multi-task dataset."""
         self.root_path = path
         self.mode = mode
         self.tasks = self.MULTI_TASKS[group][mode]
-        self.attr_train_task = self.MULTI_TASKS[group]['attr_train_task'] if 'attr_train_task' in self.MULTI_TASKS[group] else None
+        self.attr_train_task = (
+            self.MULTI_TASKS[group]["attr_train_task"] if "attr_train_task" in self.MULTI_TASKS[group] else None
+        )
 
         self.cfg = cfg
         self.sample_set = {}
         self.max_seed = -1
         self.n_episodes = 0
-        self.images = self.cfg['dataset']['images']
-        self.cache = self.cfg['dataset']['cache']
+        self.images = self.cfg["dataset"]["images"]
+        self.cache = self.cfg["dataset"]["cache"]
         self.n_demos = n_demos
         self.augment = augment
 
-        self.aug_theta_sigma = self.cfg['dataset']['augment']['theta_sigma'] if 'augment' in self.cfg['dataset'] else 60  # legacy code issue: theta_sigma was newly added
+        self.aug_theta_sigma = (
+            self.cfg["dataset"]["augment"]["theta_sigma"] if "augment" in self.cfg["dataset"] else 60
+        )  # legacy code issue: theta_sigma was newly added
         self.pix_size = 0.003125
         self.in_shape = (320, 160, 6)
         self.cam_config = cameras.RealSenseD415.CONFIG
@@ -694,12 +673,12 @@ class RavensMultiTaskDataset(RavensDataset):
         episodes = {}
 
         for task in self.tasks:
-            task_path = os.path.join(self.root_path, f'{task}-{mode}')
-            action_path = os.path.join(task_path, 'action')
+            task_path = os.path.join(self.root_path, f"{task}-{mode}")
+            action_path = os.path.join(task_path, "action")
             n_episodes = 0
             if os.path.exists(action_path):
                 for fname in sorted(os.listdir(action_path)):
-                    if '.pkl' in fname:
+                    if ".pkl" in fname:
                         n_episodes += 1
             self.n_episodes[task] = n_episodes
 
@@ -710,8 +689,8 @@ class RavensMultiTaskDataset(RavensDataset):
             episodes[task] = np.random.choice(range(n_episodes), min(self.n_demos, n_episodes), False)
 
         if self.n_demos > 0:
-            self.images = self.cfg['dataset']['images']
-            self.cache = False # TODO(mohit): fix caching for multi-task dataset
+            self.images = self.cfg["dataset"]["images"]
+            self.cache = False  # TODO(mohit): fix caching for multi-task dataset
             self.set(episodes)
 
         self._path = None
@@ -728,7 +707,7 @@ class RavensMultiTaskDataset(RavensDataset):
     def __getitem__(self, idx):
         # Choose random task.
         self._task = np.random.choice(self.tasks)
-        self._path = os.path.join(self.root_path, f'{self._task}')
+        self._path = os.path.join(self.root_path, f"{self._task}")
 
         # Choose random episode.
         if len(self.sample_set[self._task]) > 0:
@@ -738,19 +717,19 @@ class RavensMultiTaskDataset(RavensDataset):
         episode, _ = self.load(episode_id, self.images, self.cache)
 
         # Is the task sequential like stack-block-pyramid-seq?
-        is_sequential_task = '-seq' in self._path.split("/")[-1]
+        is_sequential_task = "-seq" in self._path.split("/")[-1]
 
         # Return observation action pair (and goal) from episode.
         if len(episode) > 1:
-            i = np.random.choice(range(len(episode)-1))
-            g = i+1 if is_sequential_task else -1
+            i = np.random.choice(range(len(episode) - 1))
+            g = i + 1 if is_sequential_task else -1
             sample, goal = episode[i], episode[g]
         else:
             sample, goal = episode[0], episode[0]
 
         # Process sample
         sample = self.process_sample(sample, augment=self.augment)
-        goal = self.process_goal(goal, perturb_params=sample['perturb_params'])
+        goal = self.process_goal(goal, perturb_params=sample["perturb_params"])
 
         return sample, goal
 
@@ -758,21 +737,21 @@ class RavensMultiTaskDataset(RavensDataset):
         raise Exception("Adding tasks not supported with multi-task dataset")
 
     def load(self, episode_id, images=True, cache=False):
-        if self.attr_train_task is None or self.mode in ['val', 'test']:
+        if self.attr_train_task is None or self.mode in ["val", "test"]:
             self._task = np.random.choice(self.tasks)
         else:
             all_other_tasks = list(self.tasks)
             all_other_tasks.remove(self.attr_train_task)
-            all_tasks = [self.attr_train_task] + all_other_tasks # add seen task in the front
+            all_tasks = [self.attr_train_task] + all_other_tasks  # add seen task in the front
 
             # 50% chance of sampling the main seen task and 50% chance of sampling any other seen-unseen task
             mult_attr_seen_sample_prob = 0.5
-            sampling_probs = [(1-mult_attr_seen_sample_prob) / (len(all_tasks)-1)] * len(all_tasks)
+            sampling_probs = [(1 - mult_attr_seen_sample_prob) / (len(all_tasks) - 1)] * len(all_tasks)
             sampling_probs[0] = mult_attr_seen_sample_prob
 
             self._task = np.random.choice(all_tasks, p=sampling_probs)
 
-        self._path = os.path.join(self.root_path, f'{self._task}-{self.mode}')
+        self._path = os.path.join(self.root_path, f"{self._task}-{self.mode}")
         return super().load(episode_id, images, cache)
 
     def get_curr_task(self):

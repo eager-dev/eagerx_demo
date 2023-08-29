@@ -32,17 +32,17 @@ class AlignRope(Task):
         # Add 3-sided square.
         square_size = (length, length, 0)
         square_pose = self.get_random_pose(env, square_size)
-        square_template = 'square/square-template.urdf'
-        replace = {'DIM': (length,), 'HALF': (length / 2 - 0.005,)}
+        square_template = "square/square-template.urdf"
+        replace = {"DIM": (length,), "HALF": (length / 2 - 0.005,)}
         urdf = self.fill_template(square_template, replace)
-        env.add_object(urdf, square_pose, 'fixed')
+        env.add_object(urdf, square_pose, "fixed")
         if os.path.exists(urdf):
             os.remove(urdf)
 
         # Get four corner points of square.
-        corner0 = ( length / 2,  length / 2, 0.001)
-        corner1 = (-length / 2,  length / 2, 0.001)
-        corner2 = ( length / 2, -length / 2, 0.001)
+        corner0 = (length / 2, length / 2, 0.001)
+        corner1 = (-length / 2, length / 2, 0.001)
+        corner2 = (length / 2, -length / 2, 0.001)
         corner3 = (-length / 2, -length / 2, 0.001)
 
         corner0 = utils.apply(square_pose, corner0)
@@ -55,7 +55,7 @@ class AlignRope(Task):
             ((corner0, corner1), "front left tip to front right tip"),
             ((corner0, corner2), "front right tip to back right corner"),
             ((corner1, corner3), "front left tip to back left corner"),
-            ((corner3, corner2), "back right corner to back left corner")
+            ((corner3, corner2), "back right corner to back left corner"),
         ]
         chosen_task = np.random.choice(len(task_descs), 1)[0]
         (corner_a, corner_b), direction = task_descs[chosen_task]
@@ -71,8 +71,7 @@ class AlignRope(Task):
         objects = []
         for i in range(n_parts):
             position[2] += np.linalg.norm(increment)
-            part_id = p.createMultiBody(0.1, part_shape, part_visual,
-                                        basePosition=position)
+            part_id = p.createMultiBody(0.1, part_shape, part_visual, basePosition=position)
             if parent_id > -1:
                 constraint_id = p.createConstraint(
                     parentBodyUniqueId=parent_id,
@@ -82,12 +81,13 @@ class AlignRope(Task):
                     jointType=p.JOINT_POINT2POINT,
                     jointAxis=(0, 0, 0),
                     parentFramePosition=(0, 0, np.linalg.norm(increment)),
-                    childFramePosition=(0, 0, 0))
+                    childFramePosition=(0, 0, 0),
+                )
                 p.changeConstraint(constraint_id, maxForce=100)
             if (i > 0) and (i < n_parts - 1):
-                color = utils.COLORS['red'] + [1]
+                color = utils.COLORS["red"] + [1]
                 p.changeVisualShape(part_id, -1, rgbaColor=color)
-            env.obj_ids['rigid'].append(part_id)
+            env.obj_ids["rigid"].append(part_id)
             parent_id = part_id
             target_xyz = np.float32(corner_a) + i * increment + increment / 2
             objects.append((part_id, (0, None)))
@@ -95,9 +95,7 @@ class AlignRope(Task):
 
         matches = np.clip(np.eye(n_parts) + np.eye(n_parts)[::-1], 0, 1)
 
-        self.goals.append((objects, matches, targets,
-                           False, False, 'pose',
-                           None, 1))
+        self.goals.append((objects, matches, targets, False, False, "pose", None, 1))
         self.lang_goals = self.lang_goals + [self.lang_template.format(direction=direction)] * len(self.goals)
 
         for i in range(480):

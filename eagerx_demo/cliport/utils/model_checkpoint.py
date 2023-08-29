@@ -10,9 +10,9 @@ class IntervalModelCheckpoint(Callback):
     """
 
     def __init__(
-            self,
-            dirpath,
-            save_intervals,
+        self,
+        dirpath,
+        save_intervals,
     ):
         """
         Args:
@@ -27,17 +27,17 @@ class IntervalModelCheckpoint(Callback):
         self.best_val_loss = 1e10
 
     def on_batch_end(self, trainer: pl.Trainer, _):
-        """ Check if we should save a checkpoint after every train batch """
+        """Check if we should save a checkpoint after every train batch"""
         global_step = trainer.global_step
 
         if (global_step + 1) in self.save_intervals:
             trainer.run_evaluation()
-            val_loss = trainer.callback_metrics['val_loss']
+            val_loss = trainer.callback_metrics["val_loss"]
             filename = f"steps={global_step+1:05d}-val_loss={val_loss:0.8f}.ckpt"
             ckpt_path = os.path.join(self.dirpath, filename)
             trainer.save_checkpoint(ckpt_path)
 
             if val_loss < self.best_val_loss:
-                best_ckpt_path = os.path.join(self.dirpath, 'best.ckpt')
+                best_ckpt_path = os.path.join(self.dirpath, "best.ckpt")
                 trainer.save_checkpoint(best_ckpt_path)
                 self.best_val_loss = val_loss

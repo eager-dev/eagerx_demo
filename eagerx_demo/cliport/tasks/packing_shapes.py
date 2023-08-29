@@ -51,7 +51,7 @@ class PackingShapes(Task):
         }
 
         n_objects = 5
-        if self.mode == 'train':
+        if self.mode == "train":
             obj_shapes = np.random.choice(self.train_set, n_objects, replace=False)
         else:
             if self.homogeneous:
@@ -67,28 +67,26 @@ class PackingShapes(Task):
         # Add container box.
         zone_size = self.get_random_size(0.1, 0.15, 0.1, 0.15, 0.05, 0.05)
         zone_pose = self.get_random_pose(env, zone_size)
-        container_template = 'container/container-template.urdf'
+        container_template = "container/container-template.urdf"
         half = np.float32(zone_size) / 2
-        replace = {'DIM': zone_size, 'HALF': half}
+        replace = {"DIM": zone_size, "HALF": half}
         container_urdf = self.fill_template(container_template, replace)
-        env.add_object(container_urdf, zone_pose, 'fixed')
+        env.add_object(container_urdf, zone_pose, "fixed")
         if os.path.exists(container_urdf):
             os.remove(container_urdf)
 
         # Add objects.
         objects = []
-        template = 'kitting/object-template.urdf'
+        template = "kitting/object-template.urdf"
         object_points = {}
         for i in range(n_objects):
             shape = obj_shapes[i]
             size = (0.08, 0.08, 0.02)
-            pose= self.get_random_pose(env, size)
-            fname = f'{shape:02d}.obj'
-            fname = os.path.join(self.assets_root, 'kitting', fname)
+            pose = self.get_random_pose(env, size)
+            fname = f"{shape:02d}.obj"
+            fname = os.path.join(self.assets_root, "kitting", fname)
             scale = [0.003, 0.003, 0.001]  # .0005
-            replace = {'FNAME': (fname,),
-                       'SCALE': scale,
-                       'COLOR': colors[i]}
+            replace = {"FNAME": (fname,), "SCALE": scale, "COLOR": colors[i]}
             urdf = self.fill_template(template, replace)
             block_id = env.add_object(urdf, pose)
             if os.path.exists(urdf):
@@ -102,11 +100,19 @@ class PackingShapes(Task):
             obj_pts = dict()
             obj_pts[objects[i][0]] = object_points[objects[i][0]]
 
-            self.goals.append(([objects[i]], np.int32([[1]]), [zone_pose],
-                               False, True, 'zone',
-                               (obj_pts, [(zone_pose, zone_size)]),
-                               1 / num_objects_to_pick))
+            self.goals.append(
+                (
+                    [objects[i]],
+                    np.int32([[1]]),
+                    [zone_pose],
+                    False,
+                    True,
+                    "zone",
+                    (obj_pts, [(zone_pose, zone_size)]),
+                    1 / num_objects_to_pick,
+                )
+            )
             self.lang_goals.append(self.lang_template.format(obj=shapes[obj_shapes[i]]))
 
     def get_colors(self):
-        return utils.TRAIN_COLORS if self.mode == 'train' else utils.EVAL_COLORS
+        return utils.TRAIN_COLORS if self.mode == "train" else utils.EVAL_COLORS

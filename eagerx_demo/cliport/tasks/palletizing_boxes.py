@@ -23,17 +23,17 @@ class PalletizingBoxes(Task):
 
         # Add pallet.
         zone_size = (0.3, 0.25, 0.25)
-        zone_urdf = 'pallet/pallet.urdf'
+        zone_urdf = "pallet/pallet.urdf"
         rotation = utils.eulerXYZ_to_quatXYZW((0, 0, 0))
         zone_pose = ((0.5, 0.25, 0.02), rotation)
-        env.add_object(zone_urdf, zone_pose, 'fixed')
+        env.add_object(zone_urdf, zone_pose, "fixed")
 
         # Add stack of boxes on pallet.
         margin = 0.01
         object_ids = []
         object_points = {}
         stack_size = (0.19, 0.19, 0.19)
-        box_template = 'box/box-template.urdf'
+        box_template = "box/box-template.urdf"
         stack_dim = np.int32([2, 3, 3])
         # stack_dim = np.random.randint(low=2, high=4, size=3)
         box_size = (stack_size - (stack_dim - 1) * margin) / stack_dim
@@ -51,7 +51,7 @@ class PalletizingBoxes(Task):
                     position[2] += z * margin + 0.03
                     pose = (position, (0, 0, 0, 1))
                     pose = utils.multiply(zone_pose, pose)
-                    urdf = self.fill_template(box_template, {'DIM': box_size})
+                    urdf = self.fill_template(box_template, {"DIM": box_size})
                     box_id = env.add_object(urdf, pose)
                     if os.path.exists(urdf):
                         os.remove(urdf)
@@ -77,9 +77,9 @@ class PalletizingBoxes(Task):
                 boxes.remove(box_id)
         self.steps.reverse()  # Time-reversed depalletizing.
 
-        self.goals.append((
-            object_ids, np.eye(len(object_ids)), targets, False, True,
-            'zone', (object_points, [(zone_pose, zone_size)]), 1))
+        self.goals.append(
+            (object_ids, np.eye(len(object_ids)), targets, False, True, "zone", (object_points, [(zone_pose, zone_size)]), 1)
+        )
         self.lang_goals.append(self.lang_template)
 
         self.spawn_box()
@@ -95,11 +95,10 @@ class PalletizingBoxes(Task):
         if self.goals:
             for obj, _ in self.goals[0][0]:
                 obj_pose = p.getBasePositionAndOrientation(obj)
-                workspace_empty = workspace_empty and ((obj_pose[0][1] < -0.5) or
-                                                       (obj_pose[0][1] > 0))
+                workspace_empty = workspace_empty and ((obj_pose[0][1] < -0.5) or (obj_pose[0][1] > 0))
             if not self.steps:
                 self.goals = []
-                print('Palletized boxes toppled. Terminating episode.')
+                print("Palletized boxes toppled. Terminating episode.")
                 return
 
             if workspace_empty:
