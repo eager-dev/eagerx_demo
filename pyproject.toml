@@ -11,6 +11,7 @@ documentation = "https://eagerx.readthedocs.io/en/master/"
 [tool.poetry.dependencies]
 python = "^3.8, <3.9"
 eagerx = "^0.1.38"
+eagerx-interbotix = "^0.1.10"
 clip = { git = "https://github.com/openai/clip.git", branch = "main" }
 openai = "^0.22.1"
 ftfy = "^6.1.1"
@@ -30,7 +31,6 @@ sounddevice = "^0.4.6"
 openai-whisper = "^20230314"
 soundfile = "^0.12.1"
 pynput = "^1.7.6"
-
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"
