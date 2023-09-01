@@ -11,7 +11,7 @@ class TwoStreamAttentionLangFusion(Attention):
     """Two Stream Language-Conditioned Attention (a.k.a Pick) module."""
 
     def __init__(self, stream_fcn, in_shape, n_rotations, preprocess, cfg, device):
-        self.fusion_type = cfg['train']['attn_stream_fusion_type']
+        self.fusion_type = cfg["train"]["attn_stream_fusion_type"]
         super().__init__(stream_fcn, in_shape, n_rotations, preprocess, cfg, device)
 
     def _build_nets(self):
@@ -33,7 +33,7 @@ class TwoStreamAttentionLangFusion(Attention):
 
     def forward(self, inp_img, lang_goal, softmax=True):
         """Forward pass."""
-        in_data = np.pad(inp_img, self.padding, mode='constant')
+        in_data = np.pad(inp_img, self.padding, mode="constant")
         in_shape = (1,) + in_data.shape
         in_data = in_data.reshape(in_shape)
         in_tens = torch.from_numpy(in_data).to(dtype=torch.float, device=self.device)  # [B W H 6]
@@ -58,7 +58,7 @@ class TwoStreamAttentionLangFusion(Attention):
         logits = torch.cat(logits, dim=0)
         c0 = self.padding[:2, 0]
         c1 = c0 + inp_img.shape[:2]
-        logits = logits[:, :, c0[0]:c1[0], c0[1]:c1[1]]
+        logits = logits[:, :, c0[0] : c1[0], c0[1] : c1[1]]
 
         logits = logits.permute(1, 2, 3, 0)  # [B W H 1]
         output = logits.reshape(1, np.prod(logits.shape))
@@ -72,7 +72,7 @@ class TwoStreamAttentionLangFusionLat(TwoStreamAttentionLangFusion):
     """Language-Conditioned Attention (a.k.a Pick) module with lateral connections."""
 
     def __init__(self, stream_fcn, in_shape, n_rotations, preprocess, cfg, device):
-        self.fusion_type = cfg['train']['attn_stream_fusion_type']
+        self.fusion_type = cfg["train"]["attn_stream_fusion_type"]
         super().__init__(stream_fcn, in_shape, n_rotations, preprocess, cfg, device)
 
     def attend(self, x, l):

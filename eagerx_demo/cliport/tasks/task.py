@@ -16,12 +16,12 @@ from eagerx_demo.cliport.utils import utils
 import pybullet as p
 
 
-class Task():
+class Task:
     """Base Task class."""
 
     def __init__(self):
         self.ee = Suction
-        self.mode = 'train'
+        self.mode = "train"
         self.sixdof = False
         self.primitive = primitives.PickPlace()
         self.oracle_cams = cameras.Oracle.CONFIG
@@ -41,13 +41,11 @@ class Task():
         self.progress = 0
         self._rewards = 0
 
-
         self.assets_root = None
 
     def reset(self, env):  # pylint: disable=unused-argument
         if not self.assets_root:
-            raise ValueError('assets_root must be set for task, '
-                             'call set_assets_root().')
+            raise ValueError("assets_root must be set for task, " "call set_assets_root().")
         self.goals = []
         self.lang_goals = []
         self.progress = 0  # Task progression metric in range [0, 1].
@@ -59,7 +57,7 @@ class Task():
 
     def oracle(self, env):
         """Oracle agent."""
-        OracleAgent = collections.namedtuple('OracleAgent', ['act'])
+        OracleAgent = collections.namedtuple("OracleAgent", ["act"])
 
         def act(obs, info):  # pylint: disable=unused-argument
             """Calculate action."""
@@ -95,8 +93,7 @@ class Task():
                 targets_i = np.argwhere(matches[i, :]).reshape(-1)
                 if len(targets_i) > 0:  # pylint: disable=g-explicit-length-test
                     targets_xyz = np.float32([targs[j][0] for j in targets_i])
-                    dists = np.linalg.norm(
-                        targets_xyz - np.float32(xyz).reshape(1, 3), axis=1)
+                    dists = np.linalg.norm(targets_xyz - np.float32(xyz).reshape(1, 3), axis=1)
                     nn = np.argmin(dists)
                     nn_dists.append(dists[nn])
                     nn_targets.append(targets_i[nn])
@@ -124,7 +121,7 @@ class Task():
             if pick_mask is None or np.sum(pick_mask) == 0:
                 self.goals = []
                 self.lang_goals = []
-                print('Object for pick is not visible. Skipping demonstration.')
+                print("Object for pick is not visible. Skipping demonstration.")
                 return
 
             # Get picking pose.
@@ -132,8 +129,7 @@ class Task():
             pick_pix = utils.sample_distribution(pick_prob)
             # For "deterministic" demonstrations on insertion-easy, use this:
             # pick_pix = (160,80)
-            pick_pos = utils.pix_to_xyz(pick_pix, hmap,
-                                        self.bounds, self.pix_size)
+            pick_pos = utils.pix_to_xyz(pick_pix, hmap, self.bounds, self.pix_size)
             pick_pose = (np.asarray(pick_pos), np.asarray((0, 0, 0, 1)))
 
             # Get placing pose.
@@ -154,7 +150,7 @@ class Task():
 
             place_pose = (np.asarray(place_pose[0]), np.asarray(place_pose[1]))
 
-            return {'pose0': pick_pose, 'pose1': place_pose}
+            return {"pose0": pick_pose, "pose1": place_pose}
 
         return OracleAgent(act)
 
@@ -177,7 +173,7 @@ class Task():
         objs, matches, targs, _, _, metric, params, max_reward = self.goals[0]
 
         # Evaluate by matching object poses.
-        if metric == 'pose':
+        if metric == "pose":
             step_reward = 0
             for i in range(len(objs)):
                 object_id, (symmetry, _) = objs[i]
@@ -190,7 +186,7 @@ class Task():
                         break
 
         # Evaluate by measuring object intersection with zone.
-        elif metric == 'zone':
+        elif metric == "zone":
             zone_pts, total_pts = 0, 0
             obj_pts, zones = params
             for zone_idx, (zone_pose, zone_size) in enumerate(zones):
@@ -203,10 +199,15 @@ class Task():
                     obj_to_zone = utils.multiply(world_to_zone, obj_pose)
                     pts = np.float32(utils.apply(obj_to_zone, pts))
                     if len(zone_size) > 1:
-                        valid_pts = np.logical_and.reduce([
-                            pts[0, :] > -zone_size[0] / 2, pts[0, :] < zone_size[0] / 2,
-                            pts[1, :] > -zone_size[1] / 2, pts[1, :] < zone_size[1] / 2,
-                            pts[2, :] < self.zone_bounds[2, 1]])
+                        valid_pts = np.logical_and.reduce(
+                            [
+                                pts[0, :] > -zone_size[0] / 2,
+                                pts[0, :] < zone_size[0] / 2,
+                                pts[1, :] > -zone_size[1] / 2,
+                                pts[1, :] < zone_size[1] / 2,
+                                pts[2, :] < self.zone_bounds[2, 1],
+                            ]
+                        )
 
                     # if zone_idx == matches[obj_idx].argmax():
                     zone_pts += np.sum(np.float32(valid_pts))
@@ -279,8 +280,7 @@ class Task():
         color = np.concatenate((color, segm[Ellipsis, None]), axis=2)
 
         # Reconstruct real orthographic projection from point clouds.
-        hmaps, cmaps = utils.reconstruct_heightmaps(
-            [color], [depth], self.oracle_cams, self.bounds, self.pix_size)
+        hmaps, cmaps = utils.reconstruct_heightmaps([color], [depth], self.oracle_cams, self.bounds, self.pix_size)
 
         # Split color back into color and masks.
         cmap = np.uint8(cmaps)[0, Ellipsis, :3]
@@ -329,17 +329,17 @@ class Task():
     def fill_template(self, template, replace):
         """Read a file and replace key strings."""
         full_template_path = os.path.join(self.assets_root, template)
-        with open(full_template_path, 'r') as file:
+        with open(full_template_path, "r") as file:
             fdata = file.read()
         for field in replace:
             for i in range(len(replace[field])):
-                fdata = fdata.replace(f'{field}{i}', str(replace[field][i]))
+                fdata = fdata.replace(f"{field}{i}", str(replace[field][i]))
         alphabet = string.ascii_lowercase + string.digits
-        rname = ''.join(random.choices(alphabet, k=16))
+        rname = "".join(random.choices(alphabet, k=16))
         tmpdir = tempfile.gettempdir()
         template_filename = os.path.split(template)[-1]
-        fname = os.path.join(tmpdir, f'{template_filename}.{rname}')
-        with open(fname, 'w') as file:
+        fname = os.path.join(tmpdir, f"{template_filename}.{rname}")
+        with open(fname, "w") as file:
             file.write(fdata)
         return fname
 
@@ -359,7 +359,9 @@ class Task():
             np.arange(-obj_dim[0] / 2, obj_dim[0] / 2, 0.02),
             np.arange(-obj_dim[1] / 2, obj_dim[1] / 2, 0.02),
             np.arange(-obj_dim[2] / 2, obj_dim[2] / 2, 0.02),
-            sparse=False, indexing='xy')
+            sparse=False,
+            indexing="xy",
+        )
         return np.vstack((xv.reshape(1, -1), yv.reshape(1, -1), zv.reshape(1, -1)))
 
     def get_mesh_object_points(self, obj):
@@ -370,7 +372,9 @@ class Task():
             np.arange(mesh_dim[0][0], mesh_dim[1][0], 0.02),
             np.arange(mesh_dim[0][1], mesh_dim[1][1], 0.02),
             np.arange(mesh_dim[0][2], mesh_dim[1][2], 0.02),
-            sparse=False, indexing='xy')
+            sparse=False,
+            indexing="xy",
+        )
         return np.vstack((xv.reshape(1, -1), yv.reshape(1, -1), zv.reshape(1, -1)))
 
     def color_random_brown(self, obj):

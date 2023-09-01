@@ -5,11 +5,10 @@ from absl.testing import absltest
 from eagerx_demo.cliport import tasks
 from eagerx_demo.cliport.environments import environment
 
-ASSETS_PATH = 'dvnets/environments/assets/'
+ASSETS_PATH = "dvnets/environments/assets/"
 
 
 class EnvironmentTest(absltest.TestCase):
-
     def test_environment_action(self):
         env = environment.Environment(ASSETS_PATH)
         task = tasks.BlockInsertion()
@@ -27,5 +26,5 @@ class EnvironmentTest(absltest.TestCase):
                 break
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     absltest.main()

@@ -22,23 +22,22 @@ class BlockInsertion(Task):
         targ_pose = self.add_fixture(env)
         # self.goals.append(
         #     ([block_id], [2 * np.pi], [[0]], [targ_pose], 'pose', None, 1.))
-        self.goals.append(([(block_id, (2 * np.pi, None))], np.int32([[1]]),
-                           [targ_pose], False, True, 'pose', None, 1))
+        self.goals.append(([(block_id, (2 * np.pi, None))], np.int32([[1]]), [targ_pose], False, True, "pose", None, 1))
         self.lang_goals.append(self.lang_template)
 
     def add_block(self, env):
         """Add L-shaped block."""
         size = (0.1, 0.1, 0.04)
-        urdf = 'insertion/ell.urdf'
+        urdf = "insertion/ell.urdf"
         pose = self.get_random_pose(env, size)
         return env.add_object(urdf, pose)
 
     def add_fixture(self, env):
         """Add L-shaped fixture to place block."""
         size = (0.1, 0.1, 0.04)
-        urdf = 'insertion/fixture.urdf'
+        urdf = "insertion/fixture.urdf"
         pose = self.get_random_pose(env, size)
-        env.add_object(urdf, pose, 'fixed')
+        env.add_object(urdf, pose, "fixed")
         return pose
 
 
@@ -62,7 +61,7 @@ class BlockInsertionEasy(BlockInsertionTranslation):
     def add_block(self, env):
         """Add L-shaped block in fixed position."""
         # size = (0.1, 0.1, 0.04)
-        urdf = 'insertion/ell.urdf'
+        urdf = "insertion/ell.urdf"
         pose = ((0.5, 0, 0.02), p.getQuaternionFromEuler((0, 0, np.pi / 2)))
         return env.add_object(urdf, pose)
 
@@ -78,9 +77,9 @@ class BlockInsertionSixDof(BlockInsertion):
     def add_fixture(self, env):
         """Add L-shaped fixture to place block."""
         size = (0.1, 0.1, 0.04)
-        urdf = 'insertion/fixture.urdf'
+        urdf = "insertion/fixture.urdf"
         pose = self.get_random_pose_6dof(env, size)
-        env.add_object(urdf, pose, 'fixed')
+        env.add_object(urdf, pose, "fixed")
         return pose
 
     def get_random_pose_6dof(self, env, obj_size):

@@ -25,12 +25,12 @@ class AlignBoxCorner(Task):
         # Add corner.
         dimx = (box_size[0] / 2 - 0.025 + 0.0025, box_size[0] / 2 + 0.0025)
         dimy = (box_size[1] / 2 + 0.0025, box_size[1] / 2 - 0.025 + 0.0025)
-        corner_template = 'corner/corner-template.urdf'
-        replace = {'DIMX': dimx, 'DIMY': dimy}
+        corner_template = "corner/corner-template.urdf"
+        replace = {"DIMX": dimx, "DIMY": dimy}
         corner_urdf = self.fill_template(corner_template, replace)
         corner_size = (box_size[0], box_size[1], 0)
         corner_pose = self.get_random_pose(env, corner_size)
-        env.add_object(corner_urdf, corner_pose, 'fixed')
+        env.add_object(corner_urdf, corner_pose, "fixed")
         if os.path.exists(corner_urdf):
             os.remove(corner_urdf)
 
@@ -47,8 +47,8 @@ class AlignBoxCorner(Task):
         pose3 = utils.multiply(corner_pose, (alt_pos, alt_rot1))
 
         # Add box.
-        box_template = 'box/box-template.urdf'
-        box_urdf = self.fill_template(box_template, {'DIM': box_size})
+        box_template = "box/box-template.urdf"
+        box_urdf = self.fill_template(box_template, {"DIM": box_size})
         box_pose = self.get_random_pose(env, box_size)
         box_id = env.add_object(box_urdf, box_pose)
         if os.path.exists(box_urdf):
@@ -56,7 +56,16 @@ class AlignBoxCorner(Task):
         self.color_random_brown(box_id)
 
         # Goal: box is aligned with corner (1 of 4 possible poses).
-        self.goals.append(([(box_id, (2 * np.pi, None))], np.int32([[1, 1, 1, 1]]),
-                           [corner_pose, pose1, pose2, pose3],
-                           False, True, 'pose', None, 1))
+        self.goals.append(
+            (
+                [(box_id, (2 * np.pi, None))],
+                np.int32([[1, 1, 1, 1]]),
+                [corner_pose, pose1, pose2, pose3],
+                False,
+                True,
+                "pose",
+                None,
+                1,
+            )
+        )
         self.lang_goals.append(self.lang_template)

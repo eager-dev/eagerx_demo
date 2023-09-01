@@ -4,7 +4,7 @@ import numpy as np
 from eagerx_demo.cliport.utils import utils
 
 
-class PickPlace():
+class PickPlace:
     """Pick and place primitive."""
 
     def __init__(self, height=0.32, speed=0.01):
@@ -12,14 +12,14 @@ class PickPlace():
 
     def __call__(self, movej, movep, ee, pose0, pose1):
         """Execute pick and place primitive.
-    
+
         Args:
           movej: function to move robot joints.
           movep: function to move robot end effector pose.
           ee: robot end effector.
           pose0: SE(3) picking pose.
           pose1: SE(3) placing pose.
-    
+
         Returns:
           timeout: robot movement timed out if True.
         """
@@ -34,8 +34,7 @@ class PickPlace():
         timeout = movep(prepick_pose)
 
         # Move towards pick pose until contact is detected.
-        delta = (np.float32([0, 0, -0.001]),
-                 utils.eulerXYZ_to_quatXYZW((0, 0, 0)))
+        delta = (np.float32([0, 0, -0.001]), utils.eulerXYZ_to_quatXYZW((0, 0, 0)))
         targ_pose = prepick_pose
         while not ee.detect_contact():  # and target_pose[2] > 0:
             targ_pose = utils.multiply(targ_pose, delta)
@@ -73,14 +72,14 @@ class PickPlace():
 
 def push(movej, movep, ee, pose0, pose1):  # pylint: disable=unused-argument
     """Execute pushing primitive.
-  
+
     Args:
       movej: function to move robot joints.
       movep: function to move robot end effector pose.
       ee: robot end effector.
       pose0: SE(3) starting pose.
       pose1: SE(3) ending pose.
-  
+
     Returns:
       timeout: robot movement timed out if True.
     """

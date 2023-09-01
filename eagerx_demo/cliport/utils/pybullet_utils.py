@@ -14,4 +14,5 @@ def load_urdf(pybullet_client, file_path, *args, **kwargs):
     except pybullet_client.error:
         pass
 
+
 # END GOOGLE-EXTERNAL

@@ -7,7 +7,7 @@ class TwoStreamAttention(Attention):
     """Two Stream Attention (a.k.a Pick) module"""
 
     def __init__(self, stream_fcn, in_shape, n_rotations, preprocess, cfg, device):
-        self.fusion_type = cfg['train']['attn_stream_fusion_type']
+        self.fusion_type = cfg["train"]["attn_stream_fusion_type"]
         super().__init__(stream_fcn, in_shape, n_rotations, preprocess, cfg, device)
 
     def _build_nets(self):
