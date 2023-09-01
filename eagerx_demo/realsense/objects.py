@@ -152,3 +152,25 @@ class RealSense(eagerx.Object):
             graph.connect(source=image.outputs.depth, sensor="depth")
         graph.connect(source=pos.outputs.obs, target=image.inputs.pos)
         graph.connect(source=orientation.outputs.obs, target=image.inputs.orientation)
+    
+    @register.engine(RealEngine)
+    def real_engine(spec: ObjectSpec, graph: EngineGraph):
+        from eagerx_interbotix.camera.enginestates import DummyState
+
+        spec.engine.states.pos = DummyState.make()
+        spec.engine.states.orientation = DummyState.make()
+
+        from eagerx_demo.realsense.real.node import RealSenseSensor
+
+        image = RealSenseSensor.make(
+            "image",
+            rate=spec.sensors.color.rate,
+            mode=spec.config.mode,
+            render_shape=spec.config.render_shape,
+        )
+
+        graph.add([image])
+        graph.connect(source=image.outputs.color, sensor="color")
+        if "d" in spec.config.mode:
+            graph.connect(source=image.outputs.depth, sensor="depth")
+

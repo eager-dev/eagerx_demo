@@ -57,27 +57,35 @@ class RealSenseSensor(EngineNode):
         self.pipeline = rs.pipeline()
         config = rs.config()
         color_format = rs.format.rgb8 if "rgb" in self.mode else rs.format.bgr8
-        config.enable_stream(rs.stream.color, self.width, self.height, color_format, spec.config.rate)
+        config.enable_stream(rs.stream.color, self.width, self.height, color_format, spec.config.stream_rate)
         if "d" in self.mode:
-            config.enable_stream(rs.stream.depth, self.width, self.height, rs.format.z16, spec.config.rate)
+            config.enable_stream(rs.stream.depth, self.width, self.height, rs.format.z16, spec.config.stream_rate)
         self.pipeline.start(config)
+        if "d" in self.mode:
+            align_to = rs.stream.color
+            self.align = rs.align(align_to)
         self.color_image = np.zeros((self.height, self.width, 3), dtype=np.uint8)
         self.depth_image = np.zeros((self.height, self.width), dtype=np.float32)
         self.thread = Thread(target=self._image_callback, daemon=True)
+        self.thread.start()
 
     @register.states()
     def reset(self):
-        pass
+        while np.max(self.color_image) == 0 or np.max(self.depth_image) == 0:
+            pass
 
     def _image_callback(self):
         try:
             while True:
                 frames = self.pipeline.wait_for_frames()
+                if "d" in self.mode:
+                    frames = self.align.process(frames)
                 color_frame = frames.get_color_frame()
                 self.color_image = np.asanyarray(color_frame.get_data(), dtype=np.uint8)
                 if "d" in self.mode:
                     depth_frame = frames.get_depth_frame()
                     self.depth_image = np.asanyarray(depth_frame.get_data(), dtype=np.float32)
+
         except Exception as e:
             print(e)
             self.pipeline.stop()
