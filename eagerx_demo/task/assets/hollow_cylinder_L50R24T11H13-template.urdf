@@ -17,7 +17,7 @@
         <visual>
             <origin rpy="0 0 0" xyz="0 0 0"/>
             <geometry>
-                <mesh filename="file://./hollow_cylinder_L50R24T11H13.stl" scale="0.001 0.001 0.0005"/>
+                <mesh filename="hollow_cylinder_L50R24T11H13.stl" scale="0.001 0.001 0.0005"/>
             </geometry>
             <material name="blue">
                 <color rgba="0 0 0.8 1" />
@@ -26,7 +26,7 @@
         <collision concave="yes">
             <origin rpy="0 0 0" xyz="0 0 0"/>
             <geometry>
-                <mesh filename="file://./hollow_cylinder_L50R24T11H13.stl" scale="0.001 0.001 0.0005"/>
+                <mesh filename="hollow_cylinder_L50R24T11H13.stl" scale="0.001 0.001 0.0005"/>
             </geometry>
         </collision>
     </link>

@@ -20,7 +20,7 @@
             <origin rpy="0 0 0" xyz="0 0 0"/>
             <geometry>
 <!--                <mesh filename="bolt_H2S1L5.stl" scale="0.012 0.012 0.002"/>-->
-                <mesh filename="bolt_centered.stl" scale="0.003 0.003 0.003"/>
+                <mesh filename="bolt_centered.stl" scale="0.0035 0.0035 0.0035"/>
             </geometry>
             <material name="iron">
                 <color rgba="0.6314 0.6157 0.5804 1"/>

@@ -35,8 +35,9 @@ def modify_urdf(urdf_path, scale=None, color=None):
     root = tree.getroot()
 
     # Update the scale and color
-    if scale is not None:
-        for elem in root.iter('mesh'):
+    for elem in root.iter('mesh'):
+        elem.attrib['filename'] = os.path.join(os.path.split(urdf_path)[0], elem.attrib['filename'])
+        if scale is not None:
             existing_scale = elem.attrib.get('scale', '1 1 1').split()
             new_scale = [str(float(existing_scale[i]) * scale[i]) for i in range(3)]
             elem.attrib['scale'] = " ".join(new_scale)
