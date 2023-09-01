@@ -1,23 +1,23 @@
 import eagerx
 import eagerx_interbotix
-import numpy as np
 from datetime import datetime
 import os
 
 
-NAME = "HER_force_torque"
+NAME = "OpenDR_demo"
 LOG_DIR = os.path.dirname(eagerx_interbotix.__file__) + f"/../logs/{NAME}_{datetime.today().strftime('%Y-%m-%d-%H%M')}"
 
 
 if __name__ == "__main__":
     eagerx.set_log_level(eagerx.WARN)
 
-    n_procs = 1
-    rate = 10  # 20
-    safe_rate = 20
-    T_max = 10.0  # [sec]
     MUST_LOG = False
-    MUST_TEST = False
+    rtf = 0
+    rate_env = 10
+    rate_speech = 10
+    rate_xseries = 10
+    rate_engine = 20
+    rate_cam = 20
 
     # Initialize empty graph
     graph = eagerx.Graph.create()
@@ -25,79 +25,125 @@ if __name__ == "__main__":
     # Create arm
     from eagerx_interbotix.xseries.xseries import Xseries
 
-    robot_type = "vx300s"
     arm = Xseries.make(
-        name=robot_type,
-        robot_type=robot_type,
-        sensors=["position", "velocity", "ee_pos", "ee_orn"],
-        actuators=["pos_control", "gripper_control"],
+        name="arm",
+        robot_type="vx300s",
+        sensors=["moveit_status", "position", "ee_pos", "ee_orn"],
+        actuators=["moveit_to", "gripper_control"],
         states=["position", "velocity", "gripper"],
-        rate=rate,
+        rate=rate_xseries,
     )
-    arm.states.gripper.space.update(low=[0.0], high=[0.0])  # Set gripper to closed position
-    arm.states.position.space.low[-2] = np.pi / 2
-    arm.states.position.space.high[-2] = np.pi / 2
+    arm.states.gripper.space.update(low=[0.0], high=[1.0])  # Set gripper to closed position
+    arm.states.position.space.low[:] = arm.config.joint_lower
+    arm.states.position.space.high[:] = arm.config.joint_upper
     graph.add(arm)
 
-    # Connect actions
-    graph.connect(action="position_control", target=arm.actuators.pos_control)
-    graph.connect(action="gipper_control", target=arm.actuators.gripper_control)
-    # Connecting observations
-    graph.connect(source=arm.sensors.ee_pos, observation="ee_position")
+    # Create TaskSpaceControl
+    from eagerx_demo.ik.node import TaskSpaceControl
+
+    ik = TaskSpaceControl.make("task_space",
+                               rate=rate_env,
+                               joints=arm.config.joint_names,
+                               upper=arm.config.joint_upper,
+                               lower=arm.config.joint_lower,
+                               ee_link=arm.config.gripper_link,
+                               rest_poses=arm.config.sleep_positions,
+                               gui=False,
+                               robot_dict={"urdf": arm.config.urdf,
+                                           "basePosition": arm.config.base_pos,
+                                           "baseOrientation": arm.config.base_or})
+    graph.add(ik)
+
+    # Create reset node
+    from eagerx_demo.reset.node import ResetArm
+
+    reset = ResetArm.make("reset", rate=rate_env,
+                          upper=arm.config.joint_upper,
+                          lower=arm.config.joint_lower,
+                          threshold=0.02, timeout=4.0)
+    graph.add(reset)
+
+    # Connect
+    graph.connect(action="ee_pos", target=ik.inputs.ee_pos)
+    graph.connect(action="ee_orn", target=ik.inputs.ee_orn)
+    graph.connect(source=arm.sensors.position, target=ik.inputs.position)
+    graph.connect(source=ik.outputs.goal, target=reset.feedthroughs.joints)
+    graph.connect(source=arm.states.position, target=reset.targets.goal_joints)
+    graph.connect(source=arm.states.gripper, target=reset.targets.goal_gripper)
+    graph.connect(source=reset.outputs.joints, target=arm.actuators.moveit_to)
+    graph.connect(action="gripper", target=reset.feedthroughs.gripper)
+    graph.connect(source=reset.outputs.gripper, target=arm.actuators.gripper_control)
+    graph.connect(source=arm.sensors.position, target=reset.inputs.joints)
+    graph.connect(source=arm.sensors.ee_pos, observation="ee_pos")
+    graph.connect(source=arm.sensors.ee_orn, observation="ee_orn")
+    graph.connect(source=arm.sensors.moveit_status, observation="moveit_status", skip=True)
+    graph.connect(source=arm.sensors.position, observation="joint_pos")
+
+    # Create speech node
+    # from eagerx_demo.speech_recorder.objects import SpeechRecorder
+    #
+    # speech = SpeechRecorder.make("speech", rate=rate_speech, audio_device=None, debug=False, device="cpu", ckpt="base.en", prompt=None)
+    # graph.add(speech)
+    # graph.connect(source=speech.sensors.speech, observation="speech")
 
     # Create camera
     from eagerx_interbotix.camera.objects import Camera
 
     cam = Camera.make(
         "cam",
-        rate=rate,
+        rate=rate_cam,
         sensors=["image"],
         urdf=os.path.dirname(eagerx_interbotix.__file__) + "/camera/assets/realsense2_d435.urdf",
         optical_link="camera_color_optical_frame",
         calibration_link="camera_bottom_screw_frame",
-        camera_index=0,  # todo: set correct index
+        camera_index=0,
     )
     graph.add(cam)
-    # Create overlay
-    from eagerx_interbotix.overlay.node import Overlay
 
-    overlay = Overlay.make("overlay", rate=20, resolution=[480, 480], caption="robot view")
-    graph.add(overlay)
     # Connect
-    graph.connect(source=cam.sensors.image, target=overlay.inputs.main)
-    graph.connect(source=cam.sensors.image, target=overlay.inputs.thumbnail)
-    graph.render(source=overlay.outputs.image, rate=20, encoding="bgr")
+    graph.render(source=cam.sensors.image, rate=rate_cam, encoding="bgr")
 
     # Create backend
     from eagerx.backends.single_process import SingleProcess
-
     backend = SingleProcess.make()
+    # from eagerx.backends.ros1 import Ros1  # todo: why does this not work?
+    # backend = Ros1.make()
 
     # Define engines
     from eagerx_pybullet.engine import PybulletEngine
 
-    engine = PybulletEngine.make(rate=safe_rate, gui=True, egl=True, sync=True, real_time_factor=1)
+    engine = PybulletEngine.make(rate=rate_engine, gui=True, egl=True, sync=True, real_time_factor=rtf)
+
+    # Add Dummy object 'task' with a single EngineState that creates a task.
+    from eagerx_demo.task.enginestates import TaskState
+    from eagerx.core.space import Space
+    task_es_name = "task"
+    task_es = TaskState.make(workspace=[0.2, 0.5, -0.3, 0.3])
+    engine.add_object(task_es_name, urdf=None)
+    task_es_space = Space(low=0, high=1, shape=(), dtype="int64")  # var that specifies the task.
+    engine._add_engine_state(task_es_name, "reset", task_es, task_es_space.to_dict())
 
     # Define environment
     from eagerx_demo.env import ArmEnv
 
     env = ArmEnv(
         name=f"cliport_demo",
-        rate=rate,
+        rate=rate_env,
         graph=graph,
         engine=engine,
         backend=backend,
-        max_steps=int(T_max * rate),
         render_mode="human",
+        reset_position=[0, -0.91435647,  0.85219240,  0, 1.6239657, 0],  # Position of the arm when reset (out-of-view)
+        reset_gripper=[1.],  # Gripper position when reset (open)
     )
 
     # Evaluate
     action_space = env.action_space
+    action = action_space.sample()
     for eps in range(5000):
         print(f"Episode {eps}")
         obs, info = env.reset()
         done = False
         while not done:
-            action = action_space.sample()
-            obs, reward, terminated, truncated, info = env.step(action)
+            obs, reward, terminated, truncated, info = env.step(obs)
             done = terminated or truncated
