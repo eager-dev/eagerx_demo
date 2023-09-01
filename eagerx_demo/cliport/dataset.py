@@ -7,7 +7,6 @@ import warnings
 import numpy as np
 from torch.utils.data import Dataset
 
-from eagerx_demo.cliport import tasks
 from eagerx_demo.cliport.tasks import cameras
 from eagerx_demo.cliport.utils import utils
 
@@ -17,8 +16,8 @@ CAMERA_CONFIG = cameras.RealSenseD415.CONFIG
 BOUNDS = np.array([[0.25, 0.75], [-0.5, 0.5], [0, 0.28]])
 
 # Names as strings, REVERSE-sorted so longer (more specific) names are first.
-TASK_NAMES = (tasks.names).keys()
-TASK_NAMES = sorted(TASK_NAMES)[::-1]
+TASK_NAMES = [""]
+
 
 
 class RavensDataset(Dataset):
