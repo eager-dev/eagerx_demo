@@ -6,25 +6,28 @@ from collections import deque
 import abc
 
 
-TASK_STATUS = {"cancelled": -2,
-               "pending": -1,
-               "ongoing": 0,
-               "success": 1}
-GRIPPER_STATES = {"open": np.array([1.], dtype="float32"),
-                  "closed": np.array([0.], dtype="float32")}
-RUNNING_STATES = {"running": 1,
-                  "stopping": 0}
+TASK_STATUS = {"cancelled": -2, "pending": -1, "ongoing": 0, "success": 1}
+GRIPPER_STATES = {"open": np.array([1.0], dtype="float32"), "closed": np.array([0.0], dtype="float32")}
+RUNNING_STATES = {"running": 1, "stopping": 0}
 REV_TASK_STATUS = {v: k for k, v in TASK_STATUS.items()}
 REV_RUNNING_STATES = {v: k for k, v in RUNNING_STATES.items()}
 
 
 # Define environment
 class ArmEnv(eagerx.BaseEnv):
-    def __init__(self, name, rate, graph, engine, backend, render_mode: str = None,
-                 reset_position: t.List[float] = None,
-                 reset_gripper: t.List[float] = None,
-                 height: float = 0.1,
-                 **kwargs):
+    def __init__(
+        self,
+        name,
+        rate,
+        graph,
+        engine,
+        backend,
+        render_mode: str = None,
+        reset_position: t.List[float] = None,
+        reset_gripper: t.List[float] = None,
+        height: float = 0.1,
+        **kwargs,
+    ):
         super().__init__(name, rate, graph, engine, backend=backend, force_start=False, render_mode=render_mode)
         self._obs_space = self._observation_space
         self._act_space = self._action_space
@@ -45,9 +48,13 @@ class ArmEnv(eagerx.BaseEnv):
         self._steps = 0
         self._state = RUNNING_STATES["running"]
         self._action = self.action_space.sample()
-        self._action.update({"ee_pos": np.array([0.3, 0., 0.3], dtype="float32"),
-                             "ee_orn": np.array([0, 0.7071067966408575, 0, 0.7071067966408575], dtype="float32"),
-                             "gripper": np.array(GRIPPER_STATES["open"], dtype="float32")})
+        self._action.update(
+            {
+                "ee_pos": np.array([0.3, 0.0, 0.3], dtype="float32"),
+                "ee_orn": np.array([0, 0.7071067966408575, 0, 0.7071067966408575], dtype="float32"),
+                "gripper": np.array(GRIPPER_STATES["open"], dtype="float32"),
+            }
+        )
 
         # Initialize task queue with a Wait task (wait for pick & place)
         self._task_queue: deque[Task] = deque([WaitForPickAndPlace("wait", height=self._height)])
@@ -58,9 +65,13 @@ class ArmEnv(eagerx.BaseEnv):
 
         # Reset environment
         _states = self.state_space.sample()
-        _states.update({f"task/reset": np.array(1, dtype="int64"),  # Set to 0 if no task reset is needed
-                        f"arm/position": self._reset_position,
-                        f"arm/gripper": self._reset_gripper})
+        _states.update(
+            {
+                f"task/reset": np.array(1, dtype="int64"),  # Set to 0 if no task reset is needed
+                f"arm/position": self._reset_position,
+                f"arm/gripper": self._reset_gripper,
+            }
+        )
         _states.update(states or {})
         obs = self._reset(_states)
 
@@ -76,12 +87,20 @@ class ArmEnv(eagerx.BaseEnv):
 
         # todo: START
         if self._steps > 4:
-            cmd = {"pick_pos": np.array([[0.3, 0.0, 0.05]], dtype="float32"), "pick_orn": np.array([[0, 0.7071067966408575, 0, 0.7071067966408575]], dtype="float32"),
-                   "place_pos": np.array([[0.4, 0.0, 0.05]], dtype="float32"), "place_orn": np.array([[0, 0.7071067966408575, 0, 0.7071067966408575]], dtype="float32")}
+            cmd = {
+                "pick_pos": np.array([[0.3, 0.0, 0.05]], dtype="float32"),
+                "pick_orn": np.array([[0, 0.7071067966408575, 0, 0.7071067966408575]], dtype="float32"),
+                "place_pos": np.array([[0.4, 0.0, 0.05]], dtype="float32"),
+                "place_orn": np.array([[0, 0.7071067966408575, 0, 0.7071067966408575]], dtype="float32"),
+            }
             obs.update(cmd)
         else:
-            cmd = {"pick_pos": np.array([[0, 0, 0]], dtype="float32"), "pick_orn": np.array([[0, 0, 0, 0]], dtype="float32"),
-                   "place_pos": np.array([[0, 0, 0]], dtype="float32"), "place_orn": np.array([[0, 0, 0, 0]], dtype="float32")}
+            cmd = {
+                "pick_pos": np.array([[0, 0, 0]], dtype="float32"),
+                "pick_orn": np.array([[0, 0, 0, 0]], dtype="float32"),
+                "place_pos": np.array([[0, 0, 0]], dtype="float32"),
+                "place_orn": np.array([[0, 0, 0, 0]], dtype="float32"),
+            }
             obs.update(cmd)
         if 50 < self._steps < 60:
             obs["stop"] = np.array([True], dtype="bool")
@@ -112,7 +131,7 @@ class ArmEnv(eagerx.BaseEnv):
         # Terminate if task queue is empty
         terminated = len(self._task_queue) == 0
         truncated = False
-        rwd = 0.
+        rwd = 0.0
 
         # Render
         if self.render_mode == "human":
@@ -173,8 +192,12 @@ class WaitForPickAndPlace(Task):
     def __init__(self, name: str, height: float = 0.1):
         super().__init__(name)
         self._height = height
-        self._wait_cmd = {"pick_pos": np.array([0, 0, 0], dtype="float32"), "pick_orn": np.array([0, 0, 0, 0], dtype="float32"),
-                          "place_pos": np.array([0, 0, 0], dtype="float32"), "place_orn": np.array([0, 0, 0, 0], dtype="float32")}
+        self._wait_cmd = {
+            "pick_pos": np.array([0, 0, 0], dtype="float32"),
+            "pick_orn": np.array([0, 0, 0, 0], dtype="float32"),
+            "place_pos": np.array([0, 0, 0], dtype="float32"),
+            "place_orn": np.array([0, 0, 0, 0], dtype="float32"),
+        }
 
     def _update(self, obs: t.Dict[str, np.ndarray]):
         # Check if pick & place have changed.

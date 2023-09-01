@@ -19,7 +19,6 @@ BOUNDS = np.array([[0.25, 0.75], [-0.5, 0.5], [0, 0.28]])
 TASK_NAMES = [""]
 
 
-
 class RavensDataset(Dataset):
     """A simple image dataset class."""
 

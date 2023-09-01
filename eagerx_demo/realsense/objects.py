@@ -152,7 +152,7 @@ class RealSense(eagerx.Object):
             graph.connect(source=image.outputs.depth, sensor="depth")
         graph.connect(source=pos.outputs.obs, target=image.inputs.pos)
         graph.connect(source=orientation.outputs.obs, target=image.inputs.orientation)
-    
+
     @register.engine(RealEngine)
     def real_engine(spec: ObjectSpec, graph: EngineGraph):
         from eagerx_interbotix.camera.enginestates import DummyState
@@ -173,4 +173,3 @@ class RealSense(eagerx.Object):
         graph.connect(source=image.outputs.color, sensor="color")
         if "d" in spec.config.mode:
             graph.connect(source=image.outputs.depth, sensor="depth")
-

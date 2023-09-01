@@ -12,20 +12,20 @@ import eagerx
 from eagerx.core.specs import EngineStateSpec
 
 
-PATH_TO_URDF = os.path.join(os.path.dirname(__file__), 'assets')
+PATH_TO_URDF = os.path.join(os.path.dirname(__file__), "assets")
 
 COLORS = {
-    'blue': [078.0 / 255.0, 121.0 / 255.0, 167.0 / 255.0, 1.0],
-    'red': [255.0 / 255.0, 087.0 / 255.0, 089.0 / 255.0, 1.0],
-    'green': [089.0 / 255.0, 169.0 / 255.0, 079.0 / 255.0, 1.0],
-    'orange': [242.0 / 255.0, 142.0 / 255.0, 043.0 / 255.0, 1.0],
-    'yellow': [237.0 / 255.0, 201.0 / 255.0, 072.0 / 255.0, 1.0],
-    'purple': [176.0 / 255.0, 122.0 / 255.0, 161.0 / 255.0, 1.0],
-    'pink': [255.0 / 255.0, 157.0 / 255.0, 167.0 / 255.0, 1.0],
-    'cyan': [118.0 / 255.0, 183.0 / 255.0, 178.0 / 255.0, 1.0],
-    'brown': [156.0 / 255.0, 117.0 / 255.0, 095.0 / 255.0, 1.0],
+    "blue": [078.0 / 255.0, 121.0 / 255.0, 167.0 / 255.0, 1.0],
+    "red": [255.0 / 255.0, 087.0 / 255.0, 089.0 / 255.0, 1.0],
+    "green": [089.0 / 255.0, 169.0 / 255.0, 079.0 / 255.0, 1.0],
+    "orange": [242.0 / 255.0, 142.0 / 255.0, 043.0 / 255.0, 1.0],
+    "yellow": [237.0 / 255.0, 201.0 / 255.0, 072.0 / 255.0, 1.0],
+    "purple": [176.0 / 255.0, 122.0 / 255.0, 161.0 / 255.0, 1.0],
+    "pink": [255.0 / 255.0, 157.0 / 255.0, 167.0 / 255.0, 1.0],
+    "cyan": [118.0 / 255.0, 183.0 / 255.0, 178.0 / 255.0, 1.0],
+    "brown": [156.0 / 255.0, 117.0 / 255.0, 095.0 / 255.0, 1.0],
     # 'white': [255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0, 1.0],
-    'gray': [186.0 / 255.0, 176.0 / 255.0, 172.0 / 255.0, 1.0],
+    "gray": [186.0 / 255.0, 176.0 / 255.0, 172.0 / 255.0, 1.0],
 }
 
 
@@ -36,14 +36,14 @@ def modify_urdf(urdf_path, scale=None, color=None):
 
     # Update the scale and color
     if scale is not None:
-        for elem in root.iter('mesh'):
-            existing_scale = elem.attrib.get('scale', '1 1 1').split()
+        for elem in root.iter("mesh"):
+            existing_scale = elem.attrib.get("scale", "1 1 1").split()
             new_scale = [str(float(existing_scale[i]) * scale[i]) for i in range(3)]
-            elem.attrib['scale'] = " ".join(new_scale)
+            elem.attrib["scale"] = " ".join(new_scale)
 
     if color is not None:
-        for elem in root.iter('color'):
-            elem.attrib['rgba'] = f"{color[0]} {color[1]} {color[2]} {color[3]}"
+        for elem in root.iter("color"):
+            elem.attrib["rgba"] = f"{color[0]} {color[1]} {color[2]} {color[3]}"
 
     # Create a new temporary URDF file with updated properties
     with tempfile.NamedTemporaryFile(suffix=".urdf", delete=False) as tmp:
@@ -53,7 +53,9 @@ def modify_urdf(urdf_path, scale=None, color=None):
     return tmp_urdf_path
 
 
-def add_bolt_in_hole(p: BulletClient, pos: List[float], scale: float, color: List[float], add_bolt: bool = True) -> Dict[str, int]:
+def add_bolt_in_hole(
+    p: BulletClient, pos: List[float], scale: float, color: List[float], add_bolt: bool = True
+) -> Dict[str, int]:
     x, y, z = pos
     ids = {"bolt": None, "hole": None}
 
@@ -100,8 +102,10 @@ def generate_random_coordinates(rng, n, workspace, d):
     iter = 0
     while points.shape[0] < n:
         iter += 1
-        if iter > 100*n:
-            raise ValueError("Could not generate enough points. Try increasing the workspace area or decreasing the minimum distance between points.")
+        if iter > 100 * n:
+            raise ValueError(
+                "Could not generate enough points. Try increasing the workspace area or decreasing the minimum distance between points."
+            )
         # Generate a random point within the workspace
         x = rng.uniform(xmin, xmax)
         y = rng.uniform(ymin, ymax)
@@ -111,7 +115,7 @@ def generate_random_coordinates(rng, n, workspace, d):
         if points.shape[0] == 0:
             points = np.vstack([points, new_point])
         else:
-            distances = np.sqrt(np.sum((points - new_point)**2, axis=1))
+            distances = np.sqrt(np.sum((points - new_point) ** 2, axis=1))
             if np.all(distances >= d):
                 points = np.vstack([points, new_point])
 
@@ -120,7 +124,9 @@ def generate_random_coordinates(rng, n, workspace, d):
 
 class TaskState(eagerx.EngineState):
     @classmethod
-    def make(cls, num_bolts: int = 4, use_colors: List[str] = None, workspace: List[float] = None, distance: float = 0.05, seed=None):
+    def make(
+        cls, num_bolts: int = 4, use_colors: List[str] = None, workspace: List[float] = None, distance: float = 0.05, seed=None
+    ):
         """
 
         :param num_bolts: Number of bolts to use.
@@ -150,9 +156,9 @@ class TaskState(eagerx.EngineState):
         self.bolt_ids = []
         self.hole_ids = []
         for i in range(self.num_bolts):
-            bolt_ids = add_bolt_in_hole(self._p, [0., 0., 0.], 1.0, COLORS["red"], add_bolt=True)
+            bolt_ids = add_bolt_in_hole(self._p, [0.0, 0.0, 0.0], 1.0, COLORS["red"], add_bolt=True)
             self.bolt_ids.append((bolt_ids["bolt"], bolt_ids["hole"]))
-            hole_ids = add_bolt_in_hole(self._p, [0., 0., 0.], 1.0, COLORS["red"], add_bolt=False)
+            hole_ids = add_bolt_in_hole(self._p, [0.0, 0.0, 0.0], 1.0, COLORS["red"], add_bolt=False)
             self.hole_ids.append((hole_ids["bolt"], hole_ids["hole"]))
 
         reset_task(self._p, self.rng, self.bolt_ids, self.hole_ids, self.workspace, self.distance, self.use_colors)
@@ -168,19 +174,19 @@ def reset_task(p: BulletClient, rng, bolt_ids, hole_ids, workspace, distance, co
     Resets the task by moving the bolts to random positions within the workspace.
     """
     # Generate random coordinates for each bolt
-    random_coordinates = generate_random_coordinates(rng, len(bolt_ids)+len(hole_ids), workspace, distance)
-    pos_bolt = random_coordinates[:len(bolt_ids)]
-    pos_hole = random_coordinates[len(bolt_ids):]
+    random_coordinates = generate_random_coordinates(rng, len(bolt_ids) + len(hole_ids), workspace, distance)
+    pos_bolt = random_coordinates[: len(bolt_ids)]
+    pos_hole = random_coordinates[len(bolt_ids) :]
 
     # Move each bolt to its new position
     for i, (bolt_id, hole_id) in enumerate(bolt_ids):
-        x, y = pos_bolt[i] # if i > 0 else [0.3, 0]
+        x, y = pos_bolt[i]  # if i > 0 else [0.3, 0]
         p.resetBasePositionAndOrientation(bolt_id, [x, y, 0.03], [0, 0, 0, 1])
         p.resetBasePositionAndOrientation(hole_id, [x, y, 0], [0, 0, 0, 1])
 
     # Move each hole to its new position
     for i, (_, hole_id) in enumerate(hole_ids):
-        x, y = pos_hole[i] # if i > 0 else [0.4, 0]
+        x, y = pos_hole[i]  # if i > 0 else [0.4, 0]
         p.resetBasePositionAndOrientation(hole_id, [x, y, 0], [0, 0, 0, 1])
 
     # Change the color of each bol

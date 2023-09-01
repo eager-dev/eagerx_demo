@@ -246,7 +246,7 @@ class Partnr(eagerx.Node):
         for idx, point in enumerate(demo_points):
             shared_points[idx][0] = point[0]
             shared_points[idx][1] = point[1]
-    
+
     def _update_model(self):
         self.agent.train_ds = self.train_ds
         while self.inferring:
@@ -267,7 +267,7 @@ class DemonstrationWindow(object):
         self.img = np.asarray(self.img, dtype="uint8")
         self.img = cv2.cvtColor(self.img, cv2.COLOR_RGB2BGR)
         self.points = []
-    
+
     def demonstrate(self):
         window_name = "Demonstration"
         cv2.namedWindow(window_name)
@@ -288,7 +288,7 @@ class DemonstrationWindow(object):
                             cv2.line(self.img, tuple(self.points[idx - 1]), tuple(self.points[idx]), (255, 255, 255), 2)
         cv2.destroyWindow(window_name)
         return self.points
-    
+
     def _mouse_callback(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN and len(self.points) < 4:
             cv2.circle(self.img, (x, y), 2, (255, 0, 0), -1)
