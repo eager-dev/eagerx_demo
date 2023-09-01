@@ -227,7 +227,8 @@ class RavensDataset(Dataset):
         return sample
 
     def __len__(self):
-        return len(self.sample_set)
+        # return len(self.sample_set)
+        return self.n_episodes
 
     def __getitem__(self, idx):
         # Choose random episode.
@@ -241,9 +242,9 @@ class RavensDataset(Dataset):
         is_sequential_task = "-seq" in self._path.split("/")[-1]
 
         # Return random observation action pair (and goal) from episode.
-        i = np.random.choice(range(len(episode) - 1))
-        g = i + 1 if is_sequential_task else -1
-        sample, goal = episode[i], episode[g]
+        i = np.random.choice(range(len(episode)))
+        # g = i + 1 if is_sequential_task else -1
+        sample, goal = episode[i], episode[-1]
 
         # Process sample.
         sample = self.process_sample(sample, augment=self.augment)

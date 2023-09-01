@@ -8,6 +8,8 @@ from eagerx_demo.cliport.models.streams.two_stream_transport_lang_fusion import 
 from eagerx_demo.cliport.models.streams.two_stream_attention_lang_fusion import TwoStreamAttentionLangFusionLat
 from eagerx_demo.cliport.models.streams.two_stream_transport_lang_fusion import TwoStreamTransportLangFusionLat
 
+from eagerx_demo.partnr.computational_topology.persistence import get_topology
+
 
 class TwoStreamClipLingUNetTransporterAgent(TransporterAgent):
     def __init__(self, name, cfg, train_ds, test_ds):
@@ -40,11 +42,11 @@ class TwoStreamClipLingUNetTransporterAgent(TransporterAgent):
             device=self.device_type,
         )
 
-    def attn_forward(self, inp, softmax=True):
+    def attn_forward(self, inp, softmax=True, temperature=1.0):
         inp_img = inp["inp_img"]
         lang_goal = inp["lang_goal"]
 
-        out = self.attention.forward(inp_img, lang_goal, softmax=softmax)
+        out = self.attention.forward(inp_img, lang_goal, softmax=softmax, temperature=temperature)
         return out
 
     def attn_training_step(self, frame, backprop=True, compute_err=False):
@@ -56,12 +58,12 @@ class TwoStreamClipLingUNetTransporterAgent(TransporterAgent):
         out = self.attn_forward(inp, softmax=False)
         return self.attn_criterion(backprop, compute_err, inp, out, p0, p0_theta)
 
-    def trans_forward(self, inp, softmax=True):
+    def trans_forward(self, inp, softmax=True, temperature=1.0):
         inp_img = inp["inp_img"]
         p0 = inp["p0"]
         lang_goal = inp["lang_goal"]
 
-        out = self.transport.forward(inp_img, p0, lang_goal, softmax=softmax)
+        out = self.transport.forward(inp_img, p0, lang_goal, softmax=softmax, temperature=temperature)
         return out
 
     def transport_training_step(self, frame, backprop=True, compute_err=False):
@@ -75,30 +77,38 @@ class TwoStreamClipLingUNetTransporterAgent(TransporterAgent):
         err, loss = self.transport_criterion(backprop, compute_err, inp, out, p0, p1, p1_theta)
         return loss, err
 
-    def act(self, obs, info, goal=None):  # pylint: disable=unused-argument
+    def act(self, obs, info, goal=None, attn_temp=1.0, trans_temp=1.0):  # pylint: disable=unused-argument
         """Run inference and return best action given visual observations."""
         # Get heightmap from RGB-D images.
-        img = self.test_ds.get_image(obs)
+        img = self.train_ds.get_image(obs)
         lang_goal = info["lang_goal"]
 
         # Attention model forward pass.
         pick_inp = {"inp_img": img, "lang_goal": lang_goal}
-        pick_conf = self.attn_forward(pick_inp)
+        pick_conf = self.attn_forward(pick_inp, attn_temp)
         pick_conf = pick_conf.detach().cpu().numpy()
         argmax = np.argmax(pick_conf)
         argmax = np.unravel_index(argmax, shape=pick_conf.shape)
         p0_pix = argmax[:2]
         p0_theta = argmax[2] * (2 * np.pi / pick_conf.shape[2])
+        if np.isclose(np.min(pick_conf), np.max(pick_conf), atol=1e-3):
+            pick_probs = pick_conf.flatten()
+        else:
+            _, _, pick_probs = get_topology(pick_conf.squeeze())
 
         # Transport model forward pass.
         place_inp = {"inp_img": img, "p0": p0_pix, "lang_goal": lang_goal}
-        place_conf = self.trans_forward(place_inp)
+        place_conf = self.trans_forward(place_inp, trans_temp)
         place_conf = place_conf.permute(1, 2, 0)
         place_conf = place_conf.detach().cpu().numpy()
         argmax = np.argmax(place_conf)
         argmax = np.unravel_index(argmax, shape=place_conf.shape)
         p1_pix = argmax[:2]
         p1_theta = argmax[2] * (2 * np.pi / place_conf.shape[2])
+        if np.isclose(np.min(place_conf), np.max(place_conf), atol=1e-3):
+            place_probs = place_conf.flatten()
+        else:
+            _, _, place_probs = get_topology(place_conf[:, :, argmax[2]])
 
         # Pixels to end effector poses.
         hmap = img[:, :, 3]
@@ -112,6 +122,9 @@ class TwoStreamClipLingUNetTransporterAgent(TransporterAgent):
             "pose1": (np.asarray(p1_xyz), np.asarray(p1_xyzw)),
             "pick": [p0_pix[0], p0_pix[1], p0_theta],
             "place": [p1_pix[0], p1_pix[1], p1_theta],
+            "pick_confidence": np.max(pick_probs),
+            "place_confidence": np.max(place_probs),
+            "img": img,
         }
 
 

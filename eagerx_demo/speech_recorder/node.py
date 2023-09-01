@@ -15,6 +15,7 @@ import tempfile
 import whisper
 import torch
 
+
 ROOT = Path(__file__).parent.parent.parent
 
 
@@ -27,7 +28,7 @@ class SpeechInput(eagerx.EngineNode):
         process: int = eagerx.process.NEW_PROCESS,
         color: str = "cyan",
         audio_device: str = None,
-        audio_path: str = None,
+        audio_dir: str = None,
         sample_rate: int = None,
         channels: int = 1,
         subtype: str = None,
@@ -43,7 +44,7 @@ class SpeechInput(eagerx.EngineNode):
             process=process,
             color=color,
             audio_device=audio_device,
-            audio_path=audio_path,
+            audio_dir=audio_dir,
             sample_rate=sample_rate,
             channels=channels,
             subtype=subtype,
@@ -61,8 +62,9 @@ class SpeechInput(eagerx.EngineNode):
         self.correct = False
         self.recording = False
         self.prompt = spec.config.prompt
-
-        self.audio_path = spec.config.audio_path or tempfile.mktemp(prefix="rec_", suffix=".wav", dir="")
+        audio_dir = spec.config.audio_dir or str(ROOT / "data" / "audio")
+        Path(audio_dir).mkdir(parents=True, exist_ok=True)
+        self.audio_path = tempfile.mktemp(prefix="rec_", suffix=".wav", dir=audio_dir)
         self.audio_device = spec.config.audio_device
 
         # In debug mode we don't record audio
@@ -74,12 +76,12 @@ class SpeechInput(eagerx.EngineNode):
             self.device_info = sd.query_devices(self.audio_device, "input")
             self.sample_rate = spec.config.sample_rate or int(self.device_info["default_samplerate"])
 
-        device = torch.device(spec.config.device)
-        self.model = whisper.load_model(spec.config.ckpt, device=device)
+        self.device = spec.config.device
+        self.model = whisper.load_model(spec.config.ckpt, device=torch.device(self.device))
         self.channels = spec.config.channels
         self.subtype = spec.config.subtype
         self.q = queue.Queue()
-        thread = Thread(target=self._speech_recorder)
+        thread = Thread(target=self._speech_recorder, daemon=True)
         thread.start()
 
     @eagerx.register.states()
@@ -145,9 +147,12 @@ class SpeechInput(eagerx.EngineNode):
             if self.debug:
                 result = dict(text="put the milk in the fridge")
             else:
+                kwargs = dict(initial_prompt=self.prompt)
+                if self.device == "cpu":
+                    kwargs["fp16"] = False
                 result = self.model.transcribe(
                     self.audio_path,
-                    initial_prompt=self.prompt,
+                    **kwargs,
                 )
             self.input = result["text"]
             if "stop" in result["text"].lower():

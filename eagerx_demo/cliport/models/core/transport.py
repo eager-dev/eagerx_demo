@@ -48,7 +48,7 @@ class Transport(nn.Module):
         self.query_resnet = model(self.kernel_shape, self.kernel_dim, self.cfg, self.device)
         print(f"Transport FCN: {stream_one_fcn}")
 
-    def correlate(self, in0, in1, softmax):
+    def correlate(self, in0, in1, softmax, T=1.0):
         """Correlate two input tensors."""
         output = F.conv2d(in0, in1, padding=(self.pad_size, self.pad_size))
         output = F.interpolate(output, size=(in0.shape[-2], in0.shape[-1]), mode="bilinear")
@@ -56,6 +56,7 @@ class Transport(nn.Module):
         if softmax:
             output_shape = output.shape
             output = output.reshape((1, np.prod(output.shape)))
+            output = output / T
             output = F.softmax(output, dim=-1)
             output = output.reshape(output_shape[1:])
         return output

@@ -28,7 +28,7 @@ class TransporterAgent(LightningModule):
         self.test_ds = test_ds
 
         self.name = name
-        self.task = cfg["train"]["task"]
+        # self.task = cfg["train"]["task"]
         self.total_steps = 0
         self.crop_size = 64
         self.n_rotations = cfg["train"]["n_rotations"]
@@ -46,7 +46,7 @@ class TransporterAgent(LightningModule):
             "attn": torch.optim.Adam(self.attention.parameters(), lr=self.cfg["train"]["lr"]),
             "trans": torch.optim.Adam(self.transport.parameters(), lr=self.cfg["train"]["lr"]),
         }
-        print("Agent: {}, Logging: {}".format(name, cfg["train"]["log"]))
+        print(f"Agent: {name}")
 
     def _build_model(self):
         self.attention = None

@@ -44,7 +44,7 @@ class TwoStreamTransportLangFusion(Transport):
         kernel = self.fusion_query(self.query_stream_one(crop), self.query_stream_two(crop, l))
         return logits, kernel
 
-    def forward(self, inp_img, p, lang_goal, softmax=True):
+    def forward(self, inp_img, p, lang_goal, softmax=True, temperature=1):
         """Forward pass."""
         img_unprocessed = np.pad(inp_img, self.padding, mode="constant")
         input_data = img_unprocessed
@@ -76,7 +76,7 @@ class TwoStreamTransportLangFusion(Transport):
         # hcrop = self.pad_size
         # kernel = crop[:, :, pv[0]-hcrop:pv[0]+hcrop, pv[1]-hcrop:pv[1]+hcrop]
 
-        return self.correlate(logits, kernel, softmax)
+        return self.correlate(logits, kernel, softmax, temperature)
 
 
 class TwoStreamTransportLangFusionLat(TwoStreamTransportLangFusion):
