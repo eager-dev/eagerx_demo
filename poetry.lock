@@ -545,13 +545,13 @@ files = [
 
 [[package]]
 name = "eagerx"
-version = "0.1.38"
+version = "0.1.39"
 description = "Engine Angostic Graph Environments for Robotics"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "eagerx-0.1.38-py3-none-any.whl", hash = "sha256:e50638d7b374e021383ac7044eb1543abf0dc10cd8ca6053fd82c2e16c8e079d"},
-    {file = "eagerx-0.1.38.tar.gz", hash = "sha256:a5927a12d8526b32eed3480c3d5068e739909a03e07d2163fc406a83ea308a6f"},
+    {file = "eagerx-0.1.39-py3-none-any.whl", hash = "sha256:5bc47c194ed87940ffe106432d0b66dcbc59c81b31e6f1e82cc45a5899b52409"},
+    {file = "eagerx-0.1.39.tar.gz", hash = "sha256:a6e323ac3af102b4980007a7ff3d91f2f969559286bad32ca066537f191015f4"},
 ]
 
 [package.dependencies]
@@ -577,13 +577,13 @@ termcolor = ">=1.1.0,<2.0.0"
 
 [[package]]
 name = "eagerx-interbotix"
-version = "0.1.10"
+version = "0.1.11"
 description = "EAGERx interface to interbotix robot arms."
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "eagerx_interbotix-0.1.10-py3-none-any.whl", hash = "sha256:13452b70f66a8223324175e576f1c811308e7fd044209bc1894eef02f8915f51"},
-    {file = "eagerx_interbotix-0.1.10.tar.gz", hash = "sha256:e94ff8273c582d5cd7a78e3106ed136544cc9717f816063e0b76ec03769de5ff"},
+    {file = "eagerx_interbotix-0.1.11-py3-none-any.whl", hash = "sha256:9a2aff03dddc83526d096a8b293fdd6cec2e666b8f3f01a23eafd3b3f3ef738a"},
+    {file = "eagerx_interbotix-0.1.11.tar.gz", hash = "sha256:ba75ffc6d6ab2908e7e7069617d4cb997a788d8b1247f1e30dbae8623ca71e9f"},
 ]
 
 [package.dependencies]
@@ -3494,4 +3494,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8, <3.9"
-content-hash = "ed050fa22dc839e25c518d3732f8777527d8b357d7c6a3203c1edfd65c07c773"
+content-hash = "a1614715b7e176164e2049758e2dd39f636aa032d6a8c27bb31eebf91e9b04c5"
