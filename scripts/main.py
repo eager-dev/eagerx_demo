@@ -1,5 +1,6 @@
 import eagerx
 import eagerx_interbotix
+from eagerx.core.specs import EngineSpec
 from datetime import datetime
 import os
 
@@ -12,6 +13,7 @@ if __name__ == "__main__":
     eagerx.set_log_level(eagerx.WARN)
 
     MUST_LOG = False
+    robot_type = "vx300s"
     rtf = 0
     rate_env = 10
     rate_speech = 10
@@ -26,9 +28,9 @@ if __name__ == "__main__":
     from eagerx_interbotix.xseries.xseries import Xseries
 
     arm = Xseries.make(
-        name="arm",
-        robot_type="vx300s",
-        sensors=["moveit_status", "position", "ee_pos", "ee_orn"],
+        name=robot_type,
+        robot_type=robot_type,
+        sensors=["moveit_status", "position", "ee_pos", "ee_orn", "gripper_position"],
         actuators=["moveit_to", "gripper_control"],
         states=["position", "velocity", "gripper"],
         rate=rate_xseries,
@@ -60,7 +62,7 @@ if __name__ == "__main__":
     reset = ResetArm.make("reset", rate=rate_env,
                           upper=arm.config.joint_upper,
                           lower=arm.config.joint_lower,
-                          threshold=0.02, timeout=4.0)
+                          threshold=0.02, timeout=8.0)
     graph.add(reset)
 
     # Connect
@@ -78,6 +80,7 @@ if __name__ == "__main__":
     graph.connect(source=arm.sensors.ee_orn, observation="ee_orn")
     graph.connect(source=arm.sensors.moveit_status, observation="moveit_status", skip=True)
     graph.connect(source=arm.sensors.position, observation="joint_pos")
+    graph.connect(source=arm.sensors.gripper_position, observation="gripper_pos")
 
     # Create speech node
     # from eagerx_demo.speech_recorder.objects import SpeechRecorder
@@ -111,23 +114,27 @@ if __name__ == "__main__":
 
     # Define engines
     from eagerx_pybullet.engine import PybulletEngine
-
     engine = PybulletEngine.make(rate=rate_engine, gui=True, egl=True, sync=True, real_time_factor=rtf)
 
-    # Add Dummy object 'task' with a single EngineState that creates a task.
-    from eagerx_demo.task.enginestates import TaskState
-    from eagerx.core.space import Space
-    task_es_name = "task"
-    task_es = TaskState.make(workspace=[0.2, 0.5, -0.3, 0.3])
-    engine.add_object(task_es_name, urdf=None)
-    task_es_space = Space(low=0, high=1, shape=(), dtype="int64")  # var that specifies the task.
-    engine._add_engine_state(task_es_name, "reset", task_es, task_es_space.to_dict())
+    # from eagerx_reality.engine import RealEngine
+    # engine = RealEngine.make(rate=rate_engine, sync=True)
+
+    # Add Dummy object 'task' with a single EngineState that creates a task (if the engine is a PybulletEngine)
+    if engine.config.entity_id == "eagerx_pybullet.engine/PybulletEngine":
+        from eagerx_demo.task.enginestates import TaskState
+        from eagerx.core.space import Space
+        task_es_name = "task"
+        task_es = TaskState.make(workspace=[0.2, 0.5, -0.3, 0.3])
+        engine.add_object(task_es_name, urdf=None)
+        task_es_space = Space(low=0, high=1, shape=(), dtype="int64")  # var that specifies the task.
+        engine._add_engine_state(task_es_name, "reset", task_es, task_es_space.to_dict())
 
     # Define environment
     from eagerx_demo.env import ArmEnv
 
     env = ArmEnv(
         name=f"cliport_demo",
+        robot_type=robot_type,
         rate=rate_env,
         graph=graph,
         engine=engine,

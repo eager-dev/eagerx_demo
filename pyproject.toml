@@ -11,7 +11,7 @@ documentation = "https://eagerx.readthedocs.io/en/master/"
 [tool.poetry.dependencies]
 python = "^3.8, <3.9"
 eagerx = "^0.1.38"
-eagerx-interbotix = "^0.1.10"
+eagerx-interbotix = "^0.1.11"
 clip = { git = "https://github.com/openai/clip.git", branch = "main" }
 openai = "^0.22.1"
 ftfy = "^6.1.1"

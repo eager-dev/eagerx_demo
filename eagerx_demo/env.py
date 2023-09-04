@@ -15,22 +15,15 @@ REV_RUNNING_STATES = {v: k for k, v in RUNNING_STATES.items()}
 
 # Define environment
 class ArmEnv(eagerx.BaseEnv):
-    def __init__(
-        self,
-        name,
-        rate,
-        graph,
-        engine,
-        backend,
-        render_mode: str = None,
-        reset_position: t.List[float] = None,
-        reset_gripper: t.List[float] = None,
-        height: float = 0.1,
-        **kwargs,
-    ):
+    def __init__(self, name, rate, graph, engine, backend, robot_type: str, render_mode: str = None,
+                 reset_position: t.List[float] = None,
+                 reset_gripper: t.List[float] = None,
+                 height: float = 0.1,
+                 **kwargs):
         super().__init__(name, rate, graph, engine, backend=backend, force_start=False, render_mode=render_mode)
         self._obs_space = self._observation_space
         self._act_space = self._action_space
+        self._robot_type = robot_type
         self._reset_position = np.array(reset_position, dtype="float32")
         self._reset_gripper = np.array(reset_gripper, dtype="float32")
         self._height = height
@@ -65,13 +58,12 @@ class ArmEnv(eagerx.BaseEnv):
 
         # Reset environment
         _states = self.state_space.sample()
-        _states.update(
-            {
-                f"task/reset": np.array(1, dtype="int64"),  # Set to 0 if no task reset is needed
-                f"arm/position": self._reset_position,
-                f"arm/gripper": self._reset_gripper,
-            }
-        )
+        _defaul_reset_states = {"task/reset": np.array(1, dtype="int64"),  # Set to 0 if no task reset is needed
+                                f"{self._robot_type}/position": self._reset_position,
+                                f"{self._robot_type}/gripper": self._reset_gripper}
+        for k, v in _defaul_reset_states.items():
+            if k in _states:
+                _states[k] = v
         _states.update(states or {})
         obs = self._reset(_states)
 
@@ -269,15 +261,24 @@ class MoveEE(Task):
 
 
 class MoveGripper(Task):
-    # todo: measure gripper state instead of using a fixed number of updates
-    def __init__(self, name: str, gripper: str = "open", num_updates: int = 10):
+    def __init__(self, name: str, gripper: str = "open", num_updates: int = 5, tol=5e-3):
         super().__init__(name)
         self._gripper = GRIPPER_STATES[gripper]
         self._updates = 0
+        self._tol = tol
         self._num_updates = num_updates
+        self._last_gripper_pos = None
 
     def _update(self, obs: t.Dict[str, np.ndarray]):
-        self._updates += 1
+        curr = obs.get("gripper_pos")[-1][0]
+        self._last_gripper_pos = curr if self._last_gripper_pos is None else self._last_gripper_pos
+
+        if abs(self._last_gripper_pos - curr) < self._tol:
+            self._updates += 1
+        else:
+            # Gripper is moving
+            self._last_gripper_pos = curr
+            self._updates = 0
         is_done = self._updates > self._num_updates
 
         # Update task status
@@ -308,10 +309,10 @@ class Pick(Task):
             ee_pos_pre = np.array([self._ee_pos[0], self._ee_pos[1], self._ee_pos[2] + self._height], dtype="float32")
             ee_orn_pre = self._ee_orn
             task_pre = MoveEE(f"{self.name}/pre_grasp to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=self._tol)
-            task_open = MoveGripper(f"{self.name}/open", gripper="open", num_updates=5)
+            task_open = MoveGripper(f"{self.name}/open", gripper="open", num_updates=2, tol=3e-2)
             # Grasp pose
             task_grasp = MoveEE(f"{self.name}/grasp at xyz={self._ee_pos}", self._ee_pos, self._ee_orn, tol=self._tol)
-            task_close = MoveGripper(f"{self.name}/close", gripper="closed", num_updates=10)
+            task_close = MoveGripper(f"{self.name}/close", gripper="closed", num_updates=5, tol=5e-3)
             # Grasp
             task_lift = MoveEE(f"{self.name}/post_grasp to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=self._tol)
             # Add tasks to queue
@@ -339,7 +340,7 @@ class Place(Task):
             task_pre = MoveEE(f"{self.name}/pre_place to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=self._tol)
             # Place pose
             task_place = MoveEE(f"{self.name}/place at xyz={self._ee_pos}", self._ee_pos, self._ee_orn, tol=self._tol)
-            task_open = MoveGripper(f"{self.name}/open", gripper="open", num_updates=10)
+            task_open = MoveGripper(f"{self.name}/open", gripper="open", num_updates=5, tol=5e-3)
             # Return to pre-place pose
             task_lift = MoveEE(f"{self.name}/post_place to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=self._tol)
             # Add tasks to queue
