@@ -15,11 +15,20 @@ REV_RUNNING_STATES = {v: k for k, v in RUNNING_STATES.items()}
 
 # Define environment
 class ArmEnv(eagerx.BaseEnv):
-    def __init__(self, name, rate, graph, engine, backend, robot_type: str, render_mode: str = None,
-                 reset_position: t.List[float] = None,
-                 reset_gripper: t.List[float] = None,
-                 height: float = 0.1,
-                 **kwargs):
+    def __init__(
+        self,
+        name,
+        rate,
+        graph,
+        engine,
+        backend,
+        robot_type: str,
+        render_mode: str = None,
+        reset_position: t.List[float] = None,
+        reset_gripper: t.List[float] = None,
+        height: float = 0.1,
+        **kwargs,
+    ):
         super().__init__(name, rate, graph, engine, backend=backend, force_start=False, render_mode=render_mode)
         self._obs_space = self._observation_space
         self._act_space = self._action_space
@@ -58,9 +67,11 @@ class ArmEnv(eagerx.BaseEnv):
 
         # Reset environment
         _states = self.state_space.sample()
-        _defaul_reset_states = {"task/reset": np.array(1, dtype="int64"),  # Set to 0 if no task reset is needed
-                                f"{self._robot_type}/position": self._reset_position,
-                                f"{self._robot_type}/gripper": self._reset_gripper}
+        _defaul_reset_states = {
+            "task/reset": np.array(1, dtype="int64"),  # Set to 0 if no task reset is needed
+            f"{self._robot_type}/position": self._reset_position,
+            f"{self._robot_type}/gripper": self._reset_gripper,
+        }
         for k, v in _defaul_reset_states.items():
             if k in _states:
                 _states[k] = v
