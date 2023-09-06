@@ -21,7 +21,6 @@ class IndexedJointObject:
     joint_uid: int
 
 
-
 def index_joints_and_ee_link(pb, physics_uid, robot_id, joints, ee_link):
     """Map a list of joint names to indexed joints.
     In other words, map named joints to the index used by
@@ -157,9 +156,11 @@ class TaskSpaceControl(eagerx.Node):
         self._last_ee_pose_goal = None
         self._last_goal = None
 
-    @register.inputs(ee_pos=Space(low=[-2, -2, 0], high=[2, 2, 2], dtype="float32"),
-                     ee_orn=Space(low=-1, high=1, shape=(4,), dtype="float32"),
-                     position=Space(dtype="float32"))
+    @register.inputs(
+        ee_pos=Space(low=[-2, -2, 0], high=[2, 2, 2], dtype="float32"),
+        ee_orn=Space(low=-1, high=1, shape=(4,), dtype="float32"),
+        position=Space(dtype="float32"),
+    )
     @register.outputs(goal=Space(dtype="float32"))
     def callback(self, t_n: float, ee_pos: Msg = None, ee_orn: Msg = None, position: Msg = None):
         ee_pos_goal = ee_pos.msgs[-1]
@@ -199,4 +200,3 @@ class TaskSpaceControl(eagerx.Node):
             # goal[2:] = (goal[2:] + np.pi) % (2 * np.pi) - np.pi
             self._last_goal = goal
             return dict(goal=goal)
-

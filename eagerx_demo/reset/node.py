@@ -80,7 +80,7 @@ class ResetArm(eagerx.ResetNode):
         goal_gripper = goal_gripper.msgs[-1]
 
         # Determine done flag
-        duration = (t_n - self.start)
+        duration = t_n - self.start
         if duration > 1.0 and np.isclose(joints, goal_joints, atol=self.threshold).all():
             is_done = True
         else:
@@ -94,4 +94,3 @@ class ResetArm(eagerx.ResetNode):
         output_msgs["goal_joints/done"] = is_done
         output_msgs["goal_gripper/done"] = is_done
         return output_msgs
-

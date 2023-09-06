@@ -31,7 +31,7 @@ class TwoStreamAttentionLangFusion(Attention):
         x = self.fusion(x1, x2)
         return x
 
-    def forward(self, inp_img, lang_goal, softmax=True):
+    def forward(self, inp_img, lang_goal, softmax=True, temperature=1):
         """Forward pass."""
         in_data = np.pad(inp_img, self.padding, mode="constant")
         in_shape = (1,) + in_data.shape
@@ -63,6 +63,7 @@ class TwoStreamAttentionLangFusion(Attention):
         logits = logits.permute(1, 2, 3, 0)  # [B W H 1]
         output = logits.reshape(1, np.prod(logits.shape))
         if softmax:
+            output = output / temperature
             output = F.softmax(output, dim=-1)
             output = output.reshape(logits.shape[1:])
         return output
