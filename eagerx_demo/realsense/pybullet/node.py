@@ -106,7 +106,7 @@ class CameraSensor(EngineNode):
         self.z_axis_id = None
         self.height, self.width = spec.config.render_shape
         self.intrinsic = dict(
-            fov=spec.config.fov, nearVal=spec.config.near_val, farVal=spec.config.far_val, aspect=self.height / self.width
+            fov=spec.config.fov, nearVal=spec.config.near_val, farVal=spec.config.far_val, aspect=self.width / self.height
         )
         self.cb_args = dict(
             width=self.width,

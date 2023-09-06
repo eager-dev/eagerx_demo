@@ -145,7 +145,12 @@ class SpeechInput(eagerx.EngineNode):
             self.recording = False
             print("Done RECORD")
             if self.debug:
-                result = dict(text="put the milk in the fridge")
+                if self.prompt is not None:
+                    cmds = self.prompt.split("  ")
+                    text = cmds[np.random.randint(len(cmds))]
+                else:
+                    text = "put the milk in the fridge"
+                result = dict(text=text)
             else:
                 kwargs = dict(initial_prompt=self.prompt)
                 if self.device == "cpu":

@@ -27,9 +27,10 @@ class ArmEnv(eagerx.BaseEnv):
         reset_position: t.List[float] = None,
         reset_gripper: t.List[float] = None,
         height: float = 0.1,
+        force_start: bool = False,
         **kwargs,
     ):
-        super().__init__(name, rate, graph, engine, backend=backend, force_start=False, render_mode=render_mode)
+        super().__init__(name, rate, graph, engine, backend=backend, force_start=force_start, render_mode=render_mode)
         self._obs_space = self._observation_space
         self._act_space = self._action_space
         self._robot_type = robot_type
@@ -89,22 +90,23 @@ class ArmEnv(eagerx.BaseEnv):
         self._steps += 1
 
         # todo: START
-        if self._steps > 4:
-            cmd = {
-                "pick_pos": np.array([[0.3, 0.0, 0.05]], dtype="float32"),
-                "pick_orn": np.array([[0, 0.7071067966408575, 0, 0.7071067966408575]], dtype="float32"),
-                "place_pos": np.array([[0.4, 0.0, 0.05]], dtype="float32"),
-                "place_orn": np.array([[0, 0.7071067966408575, 0, 0.7071067966408575]], dtype="float32"),
-            }
-            obs.update(cmd)
-        else:
-            cmd = {
-                "pick_pos": np.array([[0, 0, 0]], dtype="float32"),
-                "pick_orn": np.array([[0, 0, 0, 0]], dtype="float32"),
-                "place_pos": np.array([[0, 0, 0]], dtype="float32"),
-                "place_orn": np.array([[0, 0, 0, 0]], dtype="float32"),
-            }
-            obs.update(cmd)
+        # if self._steps > 4:
+        #     cmd = {
+        #         "pick_pos": np.array([[0.3, 0.0, 0.05]], dtype="float32"),
+        #         "pick_orn": np.array([[0, 0.7071067966408575, 0, 0.7071067966408575]], dtype="float32"),
+        #         "place_pos": np.array([[0.4, 0.0, 0.05]], dtype="float32"),
+        #         "place_orn": np.array([[0, 0.7071067966408575, 0, 0.7071067966408575]], dtype="float32"),
+        #     }
+        #     obs.update(cmd)
+        # else:
+        #     cmd = {
+        #         "pick_pos": np.array([[0, 0, 0]], dtype="float32"),
+        #         "pick_orn": np.array([[0, 0, 0, 0]], dtype="float32"),
+        #         "place_pos": np.array([[0, 0, 0]], dtype="float32"),
+        #         "place_orn": np.array([[0, 0, 0, 0]], dtype="float32"),
+        #     }
+        #     obs.update(cmd)
+        cmd = {"pick_pos": obs["pick_pos"][-1], "pick_orn": obs["pick_orn"][-1], "place_pos": obs["place_pos"][-1], "place_orn": obs["place_orn"][-1]}
         if 50 < self._steps < 60:
             obs["stop"] = np.array([True], dtype="bool")
         else:
@@ -323,7 +325,7 @@ class Pick(Task):
             task_open = MoveGripper(f"{self.name}/open", gripper="open", num_updates=2, tol=3e-2)
             # Grasp pose
             task_grasp = MoveEE(f"{self.name}/grasp at xyz={self._ee_pos}", self._ee_pos, self._ee_orn, tol=self._tol)
-            task_close = MoveGripper(f"{self.name}/close", gripper="closed", num_updates=5, tol=5e-3)
+            task_close = MoveGripper(f"{self.name}/close", gripper="closed", num_updates=10, tol=5e-3)
             # Grasp
             task_lift = MoveEE(f"{self.name}/post_grasp to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=self._tol)
             # Add tasks to queue
@@ -351,7 +353,7 @@ class Place(Task):
             task_pre = MoveEE(f"{self.name}/pre_place to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=self._tol)
             # Place pose
             task_place = MoveEE(f"{self.name}/place at xyz={self._ee_pos}", self._ee_pos, self._ee_orn, tol=self._tol)
-            task_open = MoveGripper(f"{self.name}/open", gripper="open", num_updates=5, tol=5e-3)
+            task_open = MoveGripper(f"{self.name}/open", gripper="open", num_updates=10, tol=5e-3)
             # Return to pre-place pose
             task_lift = MoveEE(f"{self.name}/post_place to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=self._tol)
             # Add tasks to queue
