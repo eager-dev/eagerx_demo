@@ -26,7 +26,7 @@ class ArmEnv(eagerx.BaseEnv):
         render_mode: str = None,
         reset_position: t.List[float] = None,
         reset_gripper: t.List[float] = None,
-        height: float = 0.1,
+        height: float = 0.12,
         force_start: bool = False,
         **kwargs,
     ):
@@ -88,30 +88,6 @@ class ArmEnv(eagerx.BaseEnv):
         # Step the environment
         obs = self._step(self._action)
         self._steps += 1
-
-        # todo: START
-        # if self._steps > 4:
-        #     cmd = {
-        #         "pick_pos": np.array([[0.3, 0.0, 0.05]], dtype="float32"),
-        #         "pick_orn": np.array([[0, 0.7071067966408575, 0, 0.7071067966408575]], dtype="float32"),
-        #         "place_pos": np.array([[0.4, 0.0, 0.05]], dtype="float32"),
-        #         "place_orn": np.array([[0, 0.7071067966408575, 0, 0.7071067966408575]], dtype="float32"),
-        #     }
-        #     obs.update(cmd)
-        # else:
-        #     cmd = {
-        #         "pick_pos": np.array([[0, 0, 0]], dtype="float32"),
-        #         "pick_orn": np.array([[0, 0, 0, 0]], dtype="float32"),
-        #         "place_pos": np.array([[0, 0, 0]], dtype="float32"),
-        #         "place_orn": np.array([[0, 0, 0, 0]], dtype="float32"),
-        #     }
-        #     obs.update(cmd)
-        cmd = {"pick_pos": obs["pick_pos"][-1], "pick_orn": obs["pick_orn"][-1], "place_pos": obs["place_pos"][-1], "place_orn": obs["place_orn"][-1]}
-        if 50 < self._steps < 60:
-            obs["stop"] = np.array([True], dtype="bool")
-        else:
-            obs["stop"] = np.array([False], dtype="bool")
-        # todo: END
 
         stopping = obs.get("stop", np.array([False], dtype="bool"))[-1]
         if stopping and self._state == RUNNING_STATES["running"]:
@@ -252,22 +228,30 @@ class Stop(Task):
 
 
 class MoveEE(Task):
-    def __init__(self, name: str, ee_pos: np.ndarray, ee_orn: np.ndarray, tol: float = 0.01):
+    def __init__(self, name: str, ee_pos: np.ndarray, ee_orn: np.ndarray, tol: float = 0.01, num_updates: int = 40):
         super().__init__(name)
         self._ee_pos = ee_pos
         self._ee_orn = ee_orn
         self._ee_pose = np.concatenate([self._ee_pos, self._ee_orn])
         self._tol = tol
+        self._num_updates = num_updates
+        self._updates = 0
 
     def _update(self, obs: t.Dict[str, np.ndarray]):
         # Check if ee_pos, ee_orn are reached within tolerance
         ee_pose = np.concatenate([obs["ee_pos"][-1], obs["ee_orn"][-1]])
         is_done = np.isclose(ee_pose, self._ee_pose, atol=self._tol).all()
+        is_timeout = self._updates > self._num_updates
 
         # Update task status
         if is_done:
+            self._updates  = 0
             self.set_status(TASK_STATUS["success"])
-
+        elif is_timeout:
+            self._updates = 0
+            self.set_status(TASK_STATUS["cancelled"])
+        else:
+            self._updates += 1
         # Update partial action
         partial_action = {"ee_pos": self._ee_pos, "ee_orn": self._ee_orn}
         self.set_partial_action(partial_action)
@@ -322,10 +306,10 @@ class Pick(Task):
             ee_pos_pre = np.array([self._ee_pos[0], self._ee_pos[1], self._ee_pos[2] + self._height], dtype="float32")
             ee_orn_pre = self._ee_orn
             task_pre = MoveEE(f"{self.name}/pre_grasp to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=self._tol)
-            task_open = MoveGripper(f"{self.name}/open", gripper="open", num_updates=2, tol=3e-2)
+            task_open = MoveGripper(f"{self.name}/open", gripper="open", num_updates=10, tol=5e-3)
             # Grasp pose
             task_grasp = MoveEE(f"{self.name}/grasp at xyz={self._ee_pos}", self._ee_pos, self._ee_orn, tol=self._tol)
-            task_close = MoveGripper(f"{self.name}/close", gripper="closed", num_updates=10, tol=5e-3)
+            task_close = MoveGripper(f"{self.name}/close", gripper="closed", num_updates=15, tol=5e-3)
             # Grasp
             task_lift = MoveEE(f"{self.name}/post_grasp to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=self._tol)
             # Add tasks to queue

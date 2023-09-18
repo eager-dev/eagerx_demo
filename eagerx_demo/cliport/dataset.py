@@ -7,13 +7,7 @@ import warnings
 import numpy as np
 from torch.utils.data import Dataset
 
-from eagerx_demo.cliport.tasks import cameras
 from eagerx_demo.cliport.utils import utils
-
-# See transporter.py, regression.py, dummy.py, task.py, etc.
-PIXEL_SIZE = 0.003125
-CAMERA_CONFIG = cameras.RealSenseD415.CONFIG
-BOUNDS = np.array([[0.25, 0.75], [-0.5, 0.5], [0, 0.28]])
 
 # Names as strings, REVERSE-sorted so longer (more specific) names are first.
 TASK_NAMES = [""]
@@ -22,7 +16,7 @@ TASK_NAMES = [""]
 class RavensDataset(Dataset):
     """A simple image dataset class."""
 
-    def __init__(self, path, cfg, n_demos=0, augment=False):
+    def __init__(self, path, cfg, pix_size, in_shape, cam_config, bounds, n_demos=0, augment=False):
         """A simple RGB-D image dataset."""
         self._path = path
 
@@ -38,11 +32,11 @@ class RavensDataset(Dataset):
         self.aug_theta_sigma = (
             self.cfg["dataset"]["augment"]["theta_sigma"] if "augment" in self.cfg["dataset"] else 60
         )  # legacy code issue: theta_sigma was newly added
-        self.pix_size = 0.003125
-        self.in_shape = (320, 160, 6)
-        self.cam_config = cameras.RealSenseD415.CONFIG
-        self.bounds = np.array([[0.05, 0.55], [-0.5, 0.5], [0, 0.28]])
-
+        self.pix_size = pix_size
+        self.in_shape = in_shape
+        self.cam_config = cam_config
+        self.bounds = bounds
+        
         # Track existing dataset if it exists.
         color_path = os.path.join(self._path, "action")
         if os.path.exists(color_path):
@@ -230,10 +224,7 @@ class RavensDataset(Dataset):
 
     def __getitem__(self, idx):
         # Choose random episode.
-        if len(self.sample_set) > 0:
-            episode_id = np.random.choice(self.sample_set)
-        else:
-            episode_id = np.random.choice(range(self.n_episodes))
+        episode_id = np.random.choice(range(self.n_episodes))
         episode, _ = self.load(episode_id, self.images, self.cache)
 
         # Is the task sequential like stack-block-pyramid-seq?

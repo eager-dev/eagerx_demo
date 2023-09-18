@@ -2,6 +2,8 @@ import eagerx
 import eagerx_interbotix
 from datetime import datetime
 import os
+from eagerx_demo.utils import cam_config_to_cam_spec
+from eagerx_demo.task import enginestates
 
 
 NAME = "OpenDR_demo"
@@ -9,13 +11,12 @@ LOG_DIR = os.path.dirname(eagerx_interbotix.__file__) + f"/../logs/{NAME}_{datet
 
 
 if __name__ == "__main__":
-    # eagerx.set_log_level(eagerx.DEBUG)
-    colors = ["blue", "cyan", "yellow", "gray", "brown", "orange", "pink", "purple"]
-
+    eagerx.set_log_level(eagerx.FATAL)
     prompt = ""
-    for color1 in colors:
-        for color2 in colors:
-            prompt += f"Put the {color1} bolt in the {color2} nut.  "
+    colors = enginestates.COLORS
+    for color_1 in colors.keys():
+        for color_2 in colors.keys():
+            prompt += f"Pick the {color_1} bolt and put it in the {color_2} nut. "
 
 
     MUST_LOG = False
@@ -95,30 +96,26 @@ if __name__ == "__main__":
     speech = SpeechRecorder.make(
         name="speech_recorder",
         rate=rate_speech,
-        debug=True,
+        debug=False,
         device="cpu",
         ckpt="base.en",
         prompt=prompt,
+        audio_device=10,
     )
     graph.add(speech)
     graph.connect(source=speech.sensors.speech, observation="speech")
 
     from eagerx_demo.partnr.node import Partnr
-    from eagerx_demo.cliport.tasks.cameras import RealSenseD415
+    from eagerx_demo.cliport.tasks.cameras import RealSenseD435
     from scipy.spatial.transform import Rotation as R
 
-    cam_config = RealSenseD415
-    cam_config = cam_config.CONFIG[0]
-    cam_config["image_size"] = list(cam_config["image_size"])
-    cam_config["intrinsics"] = list(cam_config["intrinsics"])
-    cam_config["position"] = list(cam_config["position"])
-    cam_config["rotation"] = list(cam_config["rotation"])
-    cam_config["zrange"] = list(cam_config["zrange"])
+    cam_config = RealSenseD435.CONFIG
+    cam_spec = cam_config_to_cam_spec(cam_config)
     
-    ee_trans = [0, 0, 0]
+    ee_trans = [0, 0, 0.0]
     ee_rot = R.from_matrix([[0, 0, 1], [0, 1, 0], [-1, 0, 0]]).as_quat().tolist()
     
-    partnr = Partnr.make(name="partnr", rate=rate_partnr, cam_config=[cam_config], ee_trans=ee_trans, ee_rot=ee_rot, debug=False)
+    partnr = Partnr.make(name="partnr", rate=rate_partnr, cam_spec=cam_spec, ee_trans=ee_trans, ee_rot=ee_rot, debug=False)
     graph.add(partnr)
     graph.connect(source=speech.sensors.speech, target=partnr.inputs.speech)
     graph.connect(source=partnr.outputs.pick_pos, observation="pick_pos")
@@ -130,9 +127,9 @@ if __name__ == "__main__":
     from eagerx_demo.realsense.objects import RealSense
     import numpy as np
 
-    image_size = RealSenseD415.CONFIG[0]["image_size"]
-    focal_len = RealSenseD415.CONFIG[0]["intrinsics"][0]
-    znear, zfar = RealSenseD415.CONFIG[0]["zrange"]
+    image_size = RealSenseD435.CONFIG[0]["image_size"]
+    focal_len = RealSenseD435.CONFIG[0]["intrinsics"][0]
+    znear, zfar = RealSenseD435.CONFIG[0]["zrange"]
     fovh = (image_size[0] / 2) / focal_len
     fovh = 180 * np.arctan(fovh) * 2 / np.pi
 
@@ -145,8 +142,8 @@ if __name__ == "__main__":
         states=[],
         mode="rgbd",
         render_shape=list(image_size),
-        base_pos=list(RealSenseD415.front_position),
-        base_or=list(RealSenseD415.front_rotation),
+        base_pos=list(RealSenseD435.front_position),
+        base_or=list(RealSenseD435.front_rotation),
         urdf=os.path.dirname(eagerx_interbotix.__file__) + "/camera/assets/realsense2_d435.urdf",
         optical_link="camera_bottom_screw_frame",
         calibration_link="camera_bottom_screw_frame",
@@ -171,7 +168,6 @@ if __name__ == "__main__":
 
     # Define engines
     from eagerx_pybullet.engine import PybulletEngine
-
     engine = PybulletEngine.make(rate=rate_engine, gui=False, egl=False, sync=True, real_time_factor=rtf)
 
     # from eagerx_reality.engine import RealEngine

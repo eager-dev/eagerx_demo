@@ -7,11 +7,15 @@ import ctypes
 
 
 class DemonstrationWindow(object):
-    def __init__(self, img):
-        self.img_original = deepcopy(cv2.rotate(cv2.cvtColor(img, cv2.COLOR_RGB2BGR), cv2.ROTATE_90_CLOCKWISE))
-        self.img_original = np.asarray(cv2.flip(self.img_original, 1), dtype="uint8")
+    def __init__(self, img, points):
+        self.img_original = deepcopy(cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+        self.img_original = np.asarray(self.img_original, dtype="uint8")
         self.img = deepcopy(self.img_original)
-        self.points = []
+        self.points = points
+        for idx, point in enumerate(self.points):
+            cv2.circle(self.img, (point[0], point[1]), 2, (255, 0, 0), -1)
+            if idx in [1, 3]:
+                cv2.line(self.img, tuple(self.points[idx - 1]), tuple(self.points[idx]), (255, 255, 255), 2)
 
     def demonstrate(self):
         window_name = "Demonstration"
@@ -47,9 +51,11 @@ class DemonstrationWindow(object):
                     2,
                 )
 
-def demonstrate(img):
+
+def demonstrate(img, points):
     shared_array_base = multiprocessing.Array(ctypes.c_int32, 4 * 2)
     shared_array = np.ctypeslib.as_array(shared_array_base.get_obj())
+    shared_array[:] = points.reshape(-1)
     shared_points = shared_array.reshape(4, 2)
     shape = img.shape
     shared_img = np.ndarray(shape, dtype="uint8", buffer=RawArray(ctypes.c_uint8, img.reshape(-1)))
@@ -63,9 +69,13 @@ def demonstrate(img):
 def _demonstrate(img, shape, shared_points):
     print("Demonstrating...")
     img_original = img.view(dtype="uint8").reshape(shape)
-    demo_window = DemonstrationWindow(img_original)
+    demo_window = DemonstrationWindow(img_original, shared_points.tolist())
     demo_points = demo_window.demonstrate()
-    print("Demonstration done.")
-    for idx, point in enumerate(demo_points):
-        shared_points[idx][0] = point[0]
-        shared_points[idx][1] = point[1]
+    if len(demo_points) == 4:
+        print("Demonstration done.")
+        for idx, point in enumerate(demo_points):
+            shared_points[idx][0] = point[1]
+            shared_points[idx][1] = point[0]
+    else:
+        print("Demonstration cancelled.")
+        shared_points[:] = np.zeros(8, dtype="int32").reshape(4, 2)

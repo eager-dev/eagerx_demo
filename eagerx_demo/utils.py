@@ -17,3 +17,23 @@ def uint8_to_string(arr):
     # Decode the bytes to a string, and remove any trailing null bytes
     s = bytes_str.decode("utf-8").rstrip("\0")
     return s
+
+
+def cam_config_to_cam_spec(cam_config):
+    cam_spec = []
+    for cam in cam_config:
+        cam_dict = {}
+        for key, value in cam.items():
+            cam_dict[key] = list(value) if isinstance(value, tuple) else value
+        cam_spec.append(cam_dict)
+    return cam_spec
+
+
+def cam_spec_to_cam_config(cam_spec):
+    cam_config = []
+    for cam in cam_spec:
+        cam_dict = {}
+        for key, value in cam.items():
+            cam_dict[key] = tuple(value) if isinstance(value, list) else value
+        cam_config.append(cam_dict)
+    return cam_config
