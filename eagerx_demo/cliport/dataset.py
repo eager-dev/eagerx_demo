@@ -36,7 +36,7 @@ class RavensDataset(Dataset):
         self.in_shape = in_shape
         self.cam_config = cam_config
         self.bounds = bounds
-        
+
         # Track existing dataset if it exists.
         color_path = os.path.join(self._path, "action")
         if os.path.exists(color_path):

@@ -84,17 +84,17 @@ def initialize_cliport(cfg):
         # Remove existing data in action, color, depth, info and reward dirs.
         # for f in os.listdir(os.path.join(data_dir, subdir)):
         #     os.remove(os.path.join(data_dir, subdir, f))
-        
-        
+
     demos = len(os.listdir(os.path.join(data_dir, subdir)))
-    
 
     # Datasets
     cam_config = cam_spec_to_cam_config(cfg["cam_spec"])
     pix_size = cfg["pix_size"]
     in_shape = tuple(cfg["in_shape"])
     bounds = np.asarray(cfg["bounds"], dtype=np.float32).reshape(3, 2)
-    train_ds = RavensDataset(data_dir, cfg, cam_config=cam_config, pix_size=pix_size, in_shape=in_shape, bounds=bounds, n_demos=demos, augment=True)
+    train_ds = RavensDataset(
+        data_dir, cfg, cam_config=cam_config, pix_size=pix_size, in_shape=in_shape, bounds=bounds, n_demos=demos, augment=True
+    )
     train_ds.n_demos = demos
     train_ds.n_episodes = demos
 

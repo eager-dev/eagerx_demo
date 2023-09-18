@@ -104,7 +104,7 @@ class SpeechInput(eagerx.EngineNode):
             speech = self.input
             self.input = None
             self.correct = False
-            
+
         speech = string_to_uint8(speech)
         return dict(speech=speech)
 

@@ -3,7 +3,7 @@ import eagerx.core.register as register
 from eagerx.core.specs import ObjectSpec
 from eagerx.core.graph_engine import EngineGraph
 from eagerx_pybullet.engine import PybulletEngine
-from eagerx_reality.engine import RealEngine    
+from eagerx_reality.engine import RealEngine
 from eagerx_demo.speech_recorder.node import SpeechInput
 
 
@@ -80,4 +80,3 @@ class SpeechRecorder(eagerx.Object):
         )
         graph.add(recorder)
         graph.connect(source=recorder.outputs.speech, sensor="speech")
-

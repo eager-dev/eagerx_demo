@@ -22,9 +22,9 @@ class Partnr(eagerx.Node):
         name: str,
         rate: float,
         cam_spec: List[Dict[str, Any]],
-        in_shape: List[int]=[320, 160, 6],
-        pix_size: float=0.003125,
-        bounds: List[float]=[[0.05, 0.55], [-0.5, 0.5], [-0.08, 0.28]],
+        in_shape: List[int] = [320, 160, 6],
+        pix_size: float = 0.003125,
+        bounds: List[float] = [[0.05, 0.55], [-0.5, 0.5], [-0.08, 0.28]],
         act_threshold=0.9,
         attn_temp=0.05,
         trans_temp=0.05,
@@ -92,9 +92,15 @@ class Partnr(eagerx.Node):
         self.pick_place = None
         self.updating = False
         self.inferring = False
-        self.trainer, self.agent, self.train_ds, self.device, self.save_json, self.checkpoint_path, episode = utils.initialize_cliport(
-            spec.config
-        )
+        (
+            self.trainer,
+            self.agent,
+            self.train_ds,
+            self.device,
+            self.save_json,
+            self.checkpoint_path,
+            episode,
+        ) = utils.initialize_cliport(spec.config)
         self.episode_number = episode
 
     @eagerx.register.states()
@@ -151,7 +157,7 @@ class Partnr(eagerx.Node):
         while self.updating:
             self.backend.loginfo_once("Waiting for model update to finish.")
             sleep(0.1)
-        
+
         self.agent.to(self.device)
         self.agent.eval()
         act = self.agent.act(obs, info, attn_temp=self.attn_temp, trans_temp=self.trans_temp)
@@ -166,7 +172,14 @@ class Partnr(eagerx.Node):
             self.pick_place = utils.get_pick_place(act, self.ee_trans, self.ee_rot)
         else:
             img = act["img"][:, :, :3]
-            points = np.asarray([[act["pick"][1], act["pick"][0]], [act["pick"][1], act["pick"][0]], [act["place"][1], act["place"][0]], [act["place"][1], act["place"][0]]])
+            points = np.asarray(
+                [
+                    [act["pick"][1], act["pick"][0]],
+                    [act["pick"][1], act["pick"][0]],
+                    [act["place"][1], act["place"][0]],
+                    [act["place"][1], act["place"][0]],
+                ]
+            )
             self.points = demonstrate(img, points)
             if np.sum(self.points) > 0:
                 demo_act = utils.demonstration_pixels_to_act(act, self.points, self.train_ds.bounds, self.train_ds.pix_size)

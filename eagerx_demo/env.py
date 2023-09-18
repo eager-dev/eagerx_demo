@@ -245,7 +245,7 @@ class MoveEE(Task):
 
         # Update task status
         if is_done:
-            self._updates  = 0
+            self._updates = 0
             self.set_status(TASK_STATUS["success"])
         elif is_timeout:
             self._updates = 0

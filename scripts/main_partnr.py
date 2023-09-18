@@ -18,7 +18,6 @@ if __name__ == "__main__":
         for color_2 in colors.keys():
             prompt += f"Pick the {color_1} bolt and put it in the {color_2} nut. "
 
-
     MUST_LOG = False
     robot_type = "vx300s"
     rtf = 0
@@ -51,26 +50,25 @@ if __name__ == "__main__":
     # Create TaskSpaceControl
     from eagerx_demo.ik.node import TaskSpaceControl
 
-    ik = TaskSpaceControl.make("task_space",
-                               rate=rate_env,
-                               joints=arm.config.joint_names,
-                               upper=arm.config.joint_upper,
-                               lower=arm.config.joint_lower,
-                               ee_link=arm.config.gripper_link,
-                               rest_poses=arm.config.sleep_positions,
-                               gui=False,
-                               robot_dict={"urdf": arm.config.urdf,
-                                           "basePosition": arm.config.base_pos,
-                                           "baseOrientation": arm.config.base_or})
+    ik = TaskSpaceControl.make(
+        "task_space",
+        rate=rate_env,
+        joints=arm.config.joint_names,
+        upper=arm.config.joint_upper,
+        lower=arm.config.joint_lower,
+        ee_link=arm.config.gripper_link,
+        rest_poses=arm.config.sleep_positions,
+        gui=False,
+        robot_dict={"urdf": arm.config.urdf, "basePosition": arm.config.base_pos, "baseOrientation": arm.config.base_or},
+    )
     graph.add(ik)
 
     # Create reset node
     from eagerx_demo.reset.node import ResetArm
 
-    reset = ResetArm.make("reset", rate=rate_env,
-                          upper=arm.config.joint_upper,
-                          lower=arm.config.joint_lower,
-                          threshold=0.02, timeout=8.0)
+    reset = ResetArm.make(
+        "reset", rate=rate_env, upper=arm.config.joint_upper, lower=arm.config.joint_lower, threshold=0.02, timeout=8.0
+    )
     graph.add(reset)
 
     # Connect
@@ -111,10 +109,10 @@ if __name__ == "__main__":
 
     cam_config = RealSenseD435.CONFIG
     cam_spec = cam_config_to_cam_spec(cam_config)
-    
+
     ee_trans = [0, 0, 0.0]
     ee_rot = R.from_matrix([[0, 0, 1], [0, 1, 0], [-1, 0, 0]]).as_quat().tolist()
-    
+
     partnr = Partnr.make(name="partnr", rate=rate_partnr, cam_spec=cam_spec, ee_trans=ee_trans, ee_rot=ee_rot, debug=False)
     graph.add(partnr)
     graph.connect(source=speech.sensors.speech, target=partnr.inputs.speech)
@@ -164,10 +162,12 @@ if __name__ == "__main__":
     # from eagerx.backends.single_process import SingleProcess
     # backend = SingleProcess.make()
     from eagerx.backends.ros1 import Ros1  # todo: why does this not work?
+
     backend = Ros1.make()
 
     # Define engines
     from eagerx_pybullet.engine import PybulletEngine
+
     engine = PybulletEngine.make(rate=rate_engine, gui=False, egl=False, sync=True, real_time_factor=rtf)
 
     # from eagerx_reality.engine import RealEngine
@@ -177,6 +177,7 @@ if __name__ == "__main__":
     if engine.config.entity_id == "eagerx_pybullet.engine/PybulletEngine":
         from eagerx_demo.task.enginestates import TaskState
         from eagerx.core.space import Space
+
         task_es_name = "task"
         task_es = TaskState.make(workspace=[0.2, 0.5, -0.3, 0.3])
         engine.add_object(task_es_name, urdf=None)
@@ -194,8 +195,8 @@ if __name__ == "__main__":
         engine=engine,
         backend=backend,
         render_mode="human",
-        reset_position=[0, -0.91435647,  0.85219240,  0, 1.6239657, 0],  # Position of the arm when reset (out-of-view)
-        reset_gripper=[1.],  # Gripper position when reset (open)
+        reset_position=[0, -0.91435647, 0.85219240, 0, 1.6239657, 0],  # Position of the arm when reset (out-of-view)
+        reset_gripper=[1.0],  # Gripper position when reset (open)
     )
 
     # Evaluate
