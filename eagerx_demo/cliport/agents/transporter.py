@@ -33,10 +33,10 @@ class TransporterAgent(LightningModule):
         self.crop_size = 64
         self.n_rotations = cfg["train"]["n_rotations"]
 
-        self.pix_size = 0.003125
-        self.in_shape = (320, 160, 6)
-        self.cam_config = cameras.RealSenseD415.CONFIG
-        self.bounds = np.array([[0.25, 0.75], [-0.5, 0.5], [0, 0.28]])
+        self.pix_size = train_ds.pix_size
+        self.in_shape = train_ds.in_shape
+        self.cam_config = train_ds.cam_config
+        self.bounds = train_ds.bounds
 
         self.val_repeats = cfg["train"]["val_repeats"]
         self.save_steps = cfg["train"]["save_steps"]
@@ -251,7 +251,7 @@ class TransporterAgent(LightningModule):
 
     def training_epoch_end(self, all_outputs):
         super().training_epoch_end(all_outputs)
-        utils.set_seed(self.trainer.current_epoch + 1)
+        # utils.set_seed(self.trainer.current_epoch + 1)
 
     def validation_epoch_end(self, all_outputs):
         mean_val_total_loss = np.mean([v["val_loss"].item() for v in all_outputs])

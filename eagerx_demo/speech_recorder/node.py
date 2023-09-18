@@ -61,6 +61,7 @@ class SpeechInput(eagerx.EngineNode):
         self.input = None
         self.correct = False
         self.recording = False
+        self.typing = False
         self.prompt = spec.config.prompt
         audio_dir = spec.config.audio_dir or str(ROOT / "data" / "audio")
         Path(audio_dir).mkdir(parents=True, exist_ok=True)
@@ -87,7 +88,6 @@ class SpeechInput(eagerx.EngineNode):
     @eagerx.register.states()
     def reset(self):
         self.input = None
-        self.recording = False
         self.correct = False
         self.speech = ""
 
@@ -104,6 +104,7 @@ class SpeechInput(eagerx.EngineNode):
             speech = self.input
             self.input = None
             self.correct = False
+            
         speech = string_to_uint8(speech)
         return dict(speech=speech)
 
@@ -113,7 +114,7 @@ class SpeechInput(eagerx.EngineNode):
             listener.join()
 
     def _on_press(self, key):
-        if not self.recording and self.input is None:
+        if not self.typing and not self.recording and self.input is None:
             if hasattr(key, "char") and key.char == ("r"):
                 self.recording = True
                 q = queue.Queue()
@@ -125,7 +126,7 @@ class SpeechInput(eagerx.EngineNode):
                 print("RECORD...")
                 thread = Thread(target=self._soundfile_writer, daemon=True)
                 thread.start()
-        if self.input is not None and not self.correct:
+        if not self.typing and not self.recording and self.input is not None and not self.correct:
             if hasattr(key, "char") and key.char == ("y"):
                 self.correct = True
                 print(f"Command {self.input} will be executed.")
@@ -141,29 +142,31 @@ class SpeechInput(eagerx.EngineNode):
                 print("#" * 80)
 
     def _on_release(self, key):
-        if hasattr(key, "char") and key.char == ("r"):
+        if not self.typing and self.recording:
             self.recording = False
-            print("Done RECORD")
-            if self.debug:
-                if self.prompt is not None:
-                    cmds = self.prompt.split("  ")
-                    text = cmds[np.random.randint(len(cmds))]
+            if hasattr(key, "char") and key.char == ("r"):
+                print("Done RECORD")
+                if self.debug:
+                    self.typing = True
+                    text = input("Enter command: ")
+                    while text.startswith("r"):
+                        text = text[1:]
+                    self.typing = False
+                    self.correct = True
+                    result = dict(text=text)
                 else:
-                    text = "put the milk in the fridge"
-                result = dict(text=text)
-            else:
-                kwargs = dict(initial_prompt=self.prompt)
-                if self.device == "cpu":
-                    kwargs["fp16"] = False
-                result = self.model.transcribe(
-                    self.audio_path,
-                    **kwargs,
-                )
-            self.input = result["text"]
-            if "stop" in result["text"].lower():
-                self.correct = True
-            else:
-                print(f"Is the following command correct?\n{result['text']}\n(y/n)")
+                    kwargs = dict(initial_prompt=self.prompt)
+                    if self.device == "cpu":
+                        kwargs["fp16"] = False
+                    result = self.model.transcribe(
+                        self.audio_path,
+                        **kwargs,
+                    )
+                self.input = result["text"]
+                if "stop" in result["text"].lower():
+                    self.correct = True
+                else:
+                    print(f"Is the following command correct?\n{result['text']}\n(y/n)")
 
     def _sd_callback(self, indata, frames, time, status):
         """This is called (from a separate thread) for each audio block."""

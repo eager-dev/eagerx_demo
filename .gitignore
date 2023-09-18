@@ -137,3 +137,6 @@ eagerx_demo/cliport/environments/assets/google/
 # exps
 exps/
 logs/
+calibrationdata/
+data/
+lightning_logs/

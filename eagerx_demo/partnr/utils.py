@@ -6,6 +6,7 @@ from pytorch_lightning import Trainer
 import os
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+from eagerx_demo.utils import cam_spec_to_cam_config
 
 
 def get_pick_place(act, ee_trans, ee_rot):
@@ -78,14 +79,24 @@ def initialize_cliport(cfg):
     subdirs = ["action", "color", "depth", "info", "reward"]
     for subdir in subdirs:
         os.makedirs(os.path.join(data_dir, subdir), exist_ok=True)
+        # Check how many demos are already in the data_dir.
         # TODO: Do we want to remove existing data or continue from where we left off?
         # Remove existing data in action, color, depth, info and reward dirs.
-        for f in os.listdir(os.path.join(data_dir, subdir)):
-            os.remove(os.path.join(data_dir, subdir, f))
+        # for f in os.listdir(os.path.join(data_dir, subdir)):
+        #     os.remove(os.path.join(data_dir, subdir, f))
+        
+        
+    demos = len(os.listdir(os.path.join(data_dir, subdir)))
+    
 
     # Datasets
-    train_ds = RavensDataset(data_dir, cfg, n_demos=0, augment=True)
-    train_ds.cam_config = cfg["cam_config"]
+    cam_config = cam_spec_to_cam_config(cfg["cam_spec"])
+    pix_size = cfg["pix_size"]
+    in_shape = tuple(cfg["in_shape"])
+    bounds = np.asarray(cfg["bounds"], dtype=np.float32).reshape(3, 2)
+    train_ds = RavensDataset(data_dir, cfg, cam_config=cam_config, pix_size=pix_size, in_shape=in_shape, bounds=bounds, n_demos=demos, augment=True)
+    train_ds.n_demos = demos
+    train_ds.n_episodes = demos
 
     # Initialize agent
     agent = agents.names[agent_type](name, cfg, train_ds, None)
@@ -101,4 +112,8 @@ def initialize_cliport(cfg):
         os.makedirs(save_path)
     save_json = os.path.join(save_path, f"{name}-{json_name}")
     checkpoint_path = os.path.join(save_path, f"{name}-last.ckpt")
-    return trainer, agent, train_ds, device, save_json, checkpoint_path
+    if os.path.exists(checkpoint_path) and cfg["train"]["load_from_last_ckpt"]:
+        model_file = checkpoint_path
+        print(f"Loading model from {model_file}")
+        agent.load(model_file)
+    return trainer, agent, train_ds, device, save_json, checkpoint_path, demos

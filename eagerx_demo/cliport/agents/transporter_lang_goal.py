@@ -94,7 +94,7 @@ class TwoStreamClipLingUNetTransporterAgent(TransporterAgent):
         if np.isclose(np.min(pick_conf), np.max(pick_conf), atol=1e-3):
             pick_probs = pick_conf.flatten()
         else:
-            _, _, pick_probs = get_topology(pick_conf.squeeze())
+            _, _, pick_probs = get_topology(pick_conf.squeeze(), temp=attn_temp)
 
         # Transport model forward pass.
         place_inp = {"inp_img": img, "p0": p0_pix, "lang_goal": lang_goal}
@@ -108,7 +108,7 @@ class TwoStreamClipLingUNetTransporterAgent(TransporterAgent):
         if np.isclose(np.min(place_conf), np.max(place_conf), atol=1e-3):
             place_probs = place_conf.flatten()
         else:
-            _, _, place_probs = get_topology(place_conf[:, :, argmax[2]])
+            _, _, place_probs = get_topology(place_conf[:, :, argmax[2]], temp=trans_temp)
 
         # Pixels to end effector poses.
         hmap = img[:, :, 3]
