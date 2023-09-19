@@ -94,6 +94,7 @@ jobs:
       #----------------------------------------------
       - name: Run tests
         run: |
+          source .venv/bin/activate
           poetry run make pytest
       #-----------------------------------------------
       #             Create coverage badge
