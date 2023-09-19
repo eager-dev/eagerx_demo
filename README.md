@@ -28,7 +28,7 @@ For running the code with the real robot, the [interbotix_copilot](https://githu
     git clone git@github.com:eager-dev/eagerx_demo.git
     cd eagerx_demo
     poetry install
-    python scripts/main.py
+    poetry run python scripts/main.py
 ```
 
 Demo Overview
