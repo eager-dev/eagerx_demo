@@ -114,6 +114,7 @@ class SpeechInput(eagerx.EngineNode):
     def _speech_recorder(self):
         # Collect events until released
         from pynput.keyboard import Listener
+
         with Listener(on_press=self._on_press, on_release=self._on_release) as listener:
             listener.join()
 

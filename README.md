@@ -31,6 +31,12 @@ For running the code with the real robot, the [interbotix_copilot](https://githu
     python scripts/main.py
 ```
 
+Demo Overview
+-------------
+
+<img align="middle" src="demo_overview.png" width="100%" />
+
+
 Cite EAGERx
 -----------
 
