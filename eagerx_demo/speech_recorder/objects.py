@@ -18,10 +18,11 @@ class SpeechRecorder(eagerx.Object):
         base_pos=None,
         base_or=None,
         audio_device=None,
-        debug=False,
+        type_commands=False,
         device="cpu",
         ckpt="base.en",
         prompt=None,
+        test=False,
     ) -> ObjectSpec:
         """Make a spec to initialize a speech to speech object.
 
@@ -37,10 +38,11 @@ class SpeechRecorder(eagerx.Object):
         spec.config.base_pos = base_pos if isinstance(base_pos, list) else [0, 0, 1]
         spec.config.base_or = base_or if isinstance(base_or, list) else [0, 0, 0, 1]
         spec.config.audio_device = audio_device
-        spec.config.debug = debug
+        spec.config.type_commands = type_commands
         spec.config.device = device
         spec.config.ckpt = ckpt
         spec.config.prompt = prompt
+        spec.config.test = test
         return spec
 
     @staticmethod
@@ -58,10 +60,11 @@ class SpeechRecorder(eagerx.Object):
             "speech_recorder",
             rate=spec.config.rate,
             audio_device=spec.config.audio_device,
-            debug=spec.config.debug,
+            type_commands=spec.config.type_commands,
             device=spec.config.device,
             ckpt=spec.config.ckpt,
             prompt=spec.config.prompt,
+            test=spec.config.test,
         )
         graph.add(recorder)
         graph.connect(source=recorder.outputs.speech, sensor="speech")
@@ -73,10 +76,11 @@ class SpeechRecorder(eagerx.Object):
             "speech_recorder",
             rate=spec.config.rate,
             audio_device=spec.config.audio_device,
-            debug=spec.config.debug,
+            type_commands=spec.config.type_commands,
             device=spec.config.device,
             ckpt=spec.config.ckpt,
             prompt=spec.config.prompt,
+            test=spec.config.test,
         )
         graph.add(recorder)
         graph.connect(source=recorder.outputs.speech, sensor="speech")

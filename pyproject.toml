@@ -26,6 +26,8 @@ openai-whisper = "^20230314"
 soundfile = "^0.12.1"
 pynput = "^1.7.6"
 protobuf = "<4"
+torch = "1.12"
+torchvision = "0.13.0"
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"

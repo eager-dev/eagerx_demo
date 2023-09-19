@@ -9,8 +9,8 @@
 What is the `eagerx_demo` package
 -------------------------------------
 
-This repository provides a template for creating EAGERx packages.
-EAGERx (Engine Agnostic Graph Environments for Robotics) enables users to easily define new tasks, switch from one sensor to another, and switch from simulation to reality with a single line of code by being invariant to the physics engine.
+This repository contains the code for an interactive imitation learning demo using EAGERx.
+Specifically, it allows to train a [CLIPort](https://cliport.github.io/) model interactively using [PARTNR](https://partnr-learn.github.io/).
 
 [The core repository is available here.](https://github.com/eager-dev/eagerx)
 [Full documentation and tutorials (including package creation and contributing) are available here.](https://eagerx.readthedocs.io/en/master/)
@@ -18,11 +18,24 @@ EAGERx (Engine Agnostic Graph Environments for Robotics) enables users to easily
 Installation
 ------------
 
-You can install the package using pip:
+You can run the main code as follows:
+
+*Prerequisites:* Install [Poetry](https://python-poetry.org/docs/master/#installation) and [ROS](http://wiki.ros.org/noetic/Installation).
+For running the code with the real robot, the [interbotix_copilot](https://github.com/bheijden/interbotix_copilot) package is required.
+
 
 ```bash
-pip3 install eagerx_demo
+    git clone git@github.com:eager-dev/eagerx_demo.git
+    cd eagerx_demo
+    poetry install
+    poetry run python scripts/main.py
 ```
+
+Demo Overview
+-------------
+
+<img align="middle" src="demo_overview.png" width="100%" />
+
 
 Cite EAGERx
 -----------

@@ -5,11 +5,8 @@ from eagerx_demo.utils import string_to_uint8
 from threading import Thread
 from typing import Any
 from pathlib import Path
-from pynput.keyboard import Listener
 import queue
 import sys
-import sounddevice as sd
-import soundfile as sf
 import numpy as np
 import tempfile
 import whisper
@@ -32,10 +29,11 @@ class SpeechInput(eagerx.EngineNode):
         sample_rate: int = None,
         channels: int = 1,
         subtype: str = None,
-        debug: bool = False,
+        type_commands: bool = False,
         device: str = "cpu",
         ckpt: str = "base.en",
         prompt: str = None,
+        test: bool = False,
     ):
         spec = cls.get_specification()
         spec.config.update(
@@ -48,10 +46,11 @@ class SpeechInput(eagerx.EngineNode):
             sample_rate=sample_rate,
             channels=channels,
             subtype=subtype,
-            debug=debug,
+            type_commands=type_commands,
             device=device,
             ckpt=ckpt,
             prompt=prompt,
+            test=test,
             inputs=["tick"],
             outputs=["speech"],
         )
@@ -68,12 +67,15 @@ class SpeechInput(eagerx.EngineNode):
         self.audio_path = tempfile.mktemp(prefix="rec_", suffix=".wav", dir=audio_dir)
         self.audio_device = spec.config.audio_device
 
-        # In debug mode we don't record audio
-        self.debug = spec.config.debug
-        if self.debug:
+        # In type_commands mode we don't record audio
+        self.type_commands = spec.config.type_commands
+        self.test = spec.config.test
+        if self.type_commands or self.test:
             self.device_info = {}
             self.sample_rate = 16000
         else:
+            import sounddevice as sd
+
             self.device_info = sd.query_devices(self.audio_device, "input")
             self.sample_rate = spec.config.sample_rate or int(self.device_info["default_samplerate"])
 
@@ -82,8 +84,9 @@ class SpeechInput(eagerx.EngineNode):
         self.channels = spec.config.channels
         self.subtype = spec.config.subtype
         self.q = queue.Queue()
-        thread = Thread(target=self._speech_recorder, daemon=True)
-        thread.start()
+        if not self.test:
+            thread = Thread(target=self._speech_recorder, daemon=True)
+            thread.start()
 
     @eagerx.register.states()
     def reset(self):
@@ -110,6 +113,8 @@ class SpeechInput(eagerx.EngineNode):
 
     def _speech_recorder(self):
         # Collect events until released
+        from pynput.keyboard import Listener
+
         with Listener(on_press=self._on_press, on_release=self._on_release) as listener:
             listener.join()
 
@@ -146,7 +151,7 @@ class SpeechInput(eagerx.EngineNode):
             self.recording = False
             if hasattr(key, "char") and key.char == ("r"):
                 print("Done RECORD")
-                if self.debug:
+                if self.type_commands:
                     self.typing = True
                     text = input("Enter command: ")
                     while text.startswith("r"):
@@ -175,10 +180,13 @@ class SpeechInput(eagerx.EngineNode):
         self.q.put(indata.copy())
 
     def _soundfile_writer(self):
+        import sounddevice as sd
+        import soundfile as sf
+
         with sf.SoundFile(
             self.audio_path, mode="x", samplerate=self.sample_rate, channels=self.channels, subtype=self.subtype
         ) as file:
-            if self.debug:
+            if self.type_commands:
                 while self.recording:
                     file.write(np.asarray(1, dtype="int32"))
             else:

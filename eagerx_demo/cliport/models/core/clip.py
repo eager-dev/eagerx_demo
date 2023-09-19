@@ -24,7 +24,7 @@ from tqdm import tqdm
 from eagerx_demo.cliport.utils.simple_tokenizer import SimpleTokenizer as _Tokenizer
 
 
-__all__ = ["available_models", "load", "tokenize"]
+__all__ = ["available_models", "load", "tokenize"]  # noqa: F822
 _tokenizer = _Tokenizer()
 
 _MODELS = {
