@@ -30,7 +30,7 @@ torch = "1.12"
 torchvision = "0.13.0"
 
 [tool.poetry.dev-dependencies]
-black = "^22.1.0"
+black = "^23.9.1"
 pytest = "^7.0"
 pytest-cov = "^3.0.0"
 flake8 = ">=3"
