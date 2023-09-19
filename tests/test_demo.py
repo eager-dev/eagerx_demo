@@ -5,8 +5,7 @@ from eagerx_demo.utils import cam_config_to_cam_spec
 from eagerx_demo.task import enginestates
 
 
-if __name__ == "__main__":
-    eagerx.set_log_level(eagerx.FATAL)
+def test_demo(engine="single_process"):
     prompt = ""
     colors = enginestates.COLORS
     for color_1 in colors.keys():
@@ -88,11 +87,10 @@ if __name__ == "__main__":
     speech = SpeechRecorder.make(
         name="speech_recorder",
         rate=rate_speech,
-        debug=False,
         device="cpu",
         ckpt="base.en",
         prompt=prompt,
-        audio_device=10,
+        debug=True,
     )
     graph.add(speech)
     graph.connect(source=speech.sensors.speech, observation="speech")
@@ -147,21 +145,19 @@ if __name__ == "__main__":
     graph.connect(source=cam.sensors.depth, target=partnr.inputs.depth)
     graph.render(source=cam.sensors.color, rate=rate_cam, encoding="rgb")
 
-    # graph.gui()
-
     # Create backend
-    # from eagerx.backends.single_process import SingleProcess
-    # backend = SingleProcess.make()
-    from eagerx.backends.ros1 import Ros1
-    backend = Ros1.make()
+    if engine == "single_process":
+        from eagerx.backends.single_process import SingleProcess
+        backend = SingleProcess.make()
+    elif engine == "ros1":
+        from eagerx.backends.ros1 import Ros1
+        backend = Ros1.make()
+    else:
+        raise ValueError(f"Unknown engine: {engine}")
 
     # Define engines
     from eagerx_pybullet.engine import PybulletEngine
-
     engine = PybulletEngine.make(rate=rate_engine, gui=False, egl=False, sync=True, real_time_factor=rtf)
-
-    # from eagerx_reality.engine import RealEngine
-    # engine = RealEngine.make(rate=rate_engine, sync=True)
 
     # Add Dummy object 'task' with a single EngineState that creates a task (if the engine is a PybulletEngine)
     if engine.config.entity_id == "eagerx_pybullet.engine/PybulletEngine":
@@ -184,7 +180,7 @@ if __name__ == "__main__":
         graph=graph,
         engine=engine,
         backend=backend,
-        render_mode="human",
+        render_mode="rgb_array",
         reset_position=[0, -0.91435647, 0.85219240, 0, 1.6239657, 0],  # Position of the arm when reset (out-of-view)
         reset_gripper=[1.0],  # Gripper position when reset (open)
     )
@@ -192,10 +188,13 @@ if __name__ == "__main__":
     # Evaluate
     action_space = env.action_space
     action = action_space.sample()
-    for eps in range(5000):
+    for eps in range(2):
         print(f"Episode {eps}")
         obs, info = env.reset()
         done = False
-        while not done:
+        for step in range(3):
             obs, reward, terminated, truncated, info = env.step(obs)
-            done = terminated or truncated
+
+if __name__ == "__main__":
+    test_demo(engine="single_process")
+    test_demo(engine="ros1")
