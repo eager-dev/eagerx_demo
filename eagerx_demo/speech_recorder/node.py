@@ -7,8 +7,6 @@ from typing import Any
 from pathlib import Path
 import queue
 import sys
-import sounddevice as sd
-import soundfile as sf
 import numpy as np
 import tempfile
 import whisper
@@ -76,6 +74,9 @@ class SpeechInput(eagerx.EngineNode):
             self.device_info = {}
             self.sample_rate = 16000
         else:
+            import sounddevice as sd
+            import soundfile as sf
+
             self.device_info = sd.query_devices(self.audio_device, "input")
             self.sample_rate = spec.config.sample_rate or int(self.device_info["default_samplerate"])
 
