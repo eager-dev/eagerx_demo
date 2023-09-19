@@ -182,6 +182,7 @@ class SpeechInput(eagerx.EngineNode):
     def _soundfile_writer(self):
         import sounddevice as sd
         import soundfile as sf
+
         with sf.SoundFile(
             self.audio_path, mode="x", samplerate=self.sample_rate, channels=self.channels, subtype=self.subtype
         ) as file:
