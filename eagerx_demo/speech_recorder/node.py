@@ -75,7 +75,6 @@ class SpeechInput(eagerx.EngineNode):
             self.sample_rate = 16000
         else:
             import sounddevice as sd
-            import soundfile as sf
 
             self.device_info = sd.query_devices(self.audio_device, "input")
             self.sample_rate = spec.config.sample_rate or int(self.device_info["default_samplerate"])
@@ -181,6 +180,8 @@ class SpeechInput(eagerx.EngineNode):
         self.q.put(indata.copy())
 
     def _soundfile_writer(self):
+        import sounddevice as sd
+        import soundfile as sf
         with sf.SoundFile(
             self.audio_path, mode="x", samplerate=self.sample_rate, channels=self.channels, subtype=self.subtype
         ) as file:
