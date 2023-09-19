@@ -88,7 +88,6 @@ if __name__ == "__main__":
     speech = SpeechRecorder.make(
         name="speech_recorder",
         rate=rate_speech,
-        debug=False,
         device="cpu",
         ckpt="base.en",
         prompt=prompt,

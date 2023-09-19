@@ -90,7 +90,7 @@ def test_demo(engine="single_process"):
         device="cpu",
         ckpt="base.en",
         prompt=prompt,
-        debug=True,
+        test=True,
     )
     graph.add(speech)
     graph.connect(source=speech.sensors.speech, observation="speech")
