@@ -100,9 +100,11 @@ def initialize_cliport(cfg):
 
     # Initialize agent
     agent = agents.names[agent_type](name, cfg, train_ds, None)
-    if len(cfg["train"]["gpu"]) > 0:
+    if cfg["train"]["gpu"] is not None and len(cfg["train"]["gpu"]) > 0:
         device = "cuda"
         agent.to(device)
+    else:
+        device = "cpu"
     agent.eval()
 
     json_name = f"results-{name}.json"
