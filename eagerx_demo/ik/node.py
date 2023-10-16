@@ -196,7 +196,7 @@ class TaskSpaceControl(eagerx.Node):
                 residualThreshold=1e-5,
                 physicsClientId=self._p,
             )
-            goal = np.array(goal[0:6], dtype="float32")
+            goal = np.array(goal[0:len(self.lower)], dtype="float32")
             # goal[2:] = (goal[2:] + np.pi) % (2 * np.pi) - np.pi
             self._last_goal = goal
             return dict(goal=goal)

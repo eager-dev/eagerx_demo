@@ -19,7 +19,7 @@ if __name__ == "__main__":
     svg = re.sub(r'aria-label=".*%"', f'aria-label="{coverage:.2f}%"', svg)
 
     # Replace coverage in title
-    svg = re.sub(r'<title>.*</title>', f'<title>{coverage:.2f}%</title>', svg)
+    svg = re.sub(r"<title>.*</title>", f"<title>{coverage:.2f}%</title>", svg)
 
     # Replace coverage in text
     svg = re.sub(r">.*%</text>", f">{coverage:.2f}%</text>", svg)
@@ -37,6 +37,3 @@ if __name__ == "__main__":
     # Save the new svg
     with open(f"{ROOT}/coverage.svg", "w") as f:
         f.write(svg)
-
-
-
