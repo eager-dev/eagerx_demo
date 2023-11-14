@@ -24,7 +24,7 @@ class ArmEnv(eagerx.BaseEnv):
         backend,
         robot_type: str,
         render_mode: str = None,
-        reset_position: t.List[float] = None,
+        reset_ee_pose: t.List[float] = None,
         reset_gripper: t.List[float] = None,
         height: float = 0.12,
         force_start: bool = False,
@@ -34,7 +34,7 @@ class ArmEnv(eagerx.BaseEnv):
         self._obs_space = self._observation_space
         self._act_space = self._action_space
         self._robot_type = robot_type
-        self._reset_position = np.array(reset_position, dtype="float32")
+        self._reset_ee_pose = np.array(reset_ee_pose, dtype="float32")
         self._reset_gripper = np.array(reset_gripper, dtype="float32")
         self._height = height
 
@@ -53,8 +53,7 @@ class ArmEnv(eagerx.BaseEnv):
         self._action = self.action_space.sample()
         self._action.update(
             {
-                "ee_pos": np.array([0.3, 0.0, 0.3], dtype="float32"),
-                "ee_orn": np.array([0, 0.7071067966408575, 0, 0.7071067966408575], dtype="float32"),
+                "ee_pose": np.array(self._reset_ee_pose, dtype="float32"),
                 "gripper": np.array(GRIPPER_STATES["open"], dtype="float32"),
             }
         )
@@ -70,7 +69,7 @@ class ArmEnv(eagerx.BaseEnv):
         _states = self.state_space.sample()
         _defaul_reset_states = {
             "task/reset": np.array(1, dtype="int64"),  # Set to 0 if no task reset is needed
-            f"{self._robot_type}/position": self._reset_position,
+            f"{self._robot_type}/ee_pose": self._reset_ee_pose,
             f"{self._robot_type}/gripper": self._reset_gripper,
         }
         for k, v in _defaul_reset_states.items():
@@ -84,10 +83,36 @@ class ArmEnv(eagerx.BaseEnv):
             self.render()
         return obs, info
 
+    def _fake_observations(self, obs):
+        if self._steps > 4:
+            cmd = {
+                "pick_pos": np.array([[0.3, -0.3, 0.15]], dtype="float32"),
+                "pick_orn": np.array([[1, 0.0, 0, 0.0]], dtype="float32"),
+                "place_pos": np.array([[0.3, 0.4, 0.15]], dtype="float32"),
+                "place_orn": np.array([[1, 0.0, 0, 0.0]], dtype="float32"),
+            }
+            obs.update(cmd)
+        else:
+            cmd = {
+                "pick_pos": np.array([[0, 0, 0]], dtype="float32"),
+                "pick_orn": np.array([[0, 0, 0, 0]], dtype="float32"),
+                "place_pos": np.array([[0, 0, 0]], dtype="float32"),
+                "place_orn": np.array([[0, 0, 0, 0]], dtype="float32"),
+            }
+            obs.update(cmd)
+        if 65 < self._steps < 90:
+            obs["stop"] = np.array([True], dtype="bool")
+        else:
+            obs["stop"] = np.array([False], dtype="bool")
+        return obs
+
     def step(self, _prev_obs):
         # Step the environment
         obs = self._step(self._action)
         self._steps += 1
+
+        # Used for debugging
+        # obs = self._fake_observations(obs)
 
         stopping = obs.get("stop", np.array([False], dtype="bool"))[-1]
         if stopping and self._state == RUNNING_STATES["running"]:
@@ -213,7 +238,8 @@ class Stop(Task):
     def _update(self, obs: t.Dict[str, np.ndarray]):
         # Determine if first time entering this task
         if not self._has_cmd:
-            action_stop = {"ee_pos": obs["ee_pos"][-1], "ee_orn": obs["ee_orn"][-1]}
+            ee_pose = np.concatenate([obs["ee_pos"][-1], obs["ee_orn"][-1]])
+            action_stop = {"ee_pose": ee_pose}
             self.set_partial_action(action_stop)
             self._has_cmd = True
 
@@ -228,7 +254,7 @@ class Stop(Task):
 
 
 class MoveEE(Task):
-    def __init__(self, name: str, ee_pos: np.ndarray, ee_orn: np.ndarray, tol: float = 0.01, num_updates: int = 40):
+    def __init__(self, name: str, ee_pos: np.ndarray, ee_orn: np.ndarray, tol: float = 0.01, num_updates: int = 100):
         super().__init__(name)
         self._ee_pos = ee_pos
         self._ee_orn = ee_orn
@@ -253,7 +279,7 @@ class MoveEE(Task):
         else:
             self._updates += 1
         # Update partial action
-        partial_action = {"ee_pos": self._ee_pos, "ee_orn": self._ee_orn}
+        partial_action = {"ee_pose": self._ee_pose}
         self.set_partial_action(partial_action)
 
 
@@ -336,7 +362,9 @@ class Place(Task):
             ee_orn_pre = self._ee_orn
             task_pre = MoveEE(f"{self.name}/pre_place to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=self._tol)
             # Place pose
-            task_place = MoveEE(f"{self.name}/place at xyz={self._ee_pos}", self._ee_pos, self._ee_orn, tol=self._tol)
+            task_place = MoveEE(
+                f"{self.name}/place at xyz={self._ee_pos}", self._ee_pos, self._ee_orn, tol=self._tol
+            )  # TODO: INCREASE TOLERANCE & NUM_UPDATES DUE TO SPIRALING SEARCH.
             task_open = MoveGripper(f"{self.name}/open", gripper="open", num_updates=10, tol=5e-3)
             # Return to pre-place pose
             task_lift = MoveEE(f"{self.name}/post_place to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=self._tol)

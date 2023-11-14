@@ -57,81 +57,82 @@ if __name__ == "__main__":
     graph.connect(source=arm.sensors.ee_orn, target=reset.inputs.ee_orn)
     graph.connect(source=arm.sensors.ee_pos, observation="ee_pos")
     graph.connect(source=arm.sensors.ee_orn, observation="ee_orn")
+    # graph.connect(source=arm.sensors.moveit_status, observation="moveit_status", skip=True)
     graph.connect(source=arm.sensors.position, observation="joint_pos")
     graph.connect(source=arm.sensors.gripper_position, observation="gripper_pos")
 
-    # Create speech node
-    from eagerx_demo.speech_recorder.objects import SpeechRecorder
+    # # Create speech node
+    # from eagerx_demo.speech_recorder.objects import SpeechRecorder
+    #
+    # speech = SpeechRecorder.make(
+    #     name="speech_recorder",
+    #     rate=rate_speech,
+    #     device="cpu",
+    #     ckpt="base.en",
+    #     prompt=prompt,
+    #     audio_device=10,
+    #     type_commands=True,
+    # )
+    # graph.add(speech)
+    # graph.connect(source=speech.sensors.speech, observation="speech")
 
-    speech = SpeechRecorder.make(
-        name="speech_recorder",
-        rate=rate_speech,
-        device="cpu",
-        ckpt="base.en",
-        prompt=prompt,
-        audio_device=10,
-        type_commands=True,
-    )
-    graph.add(speech)
-    graph.connect(source=speech.sensors.speech, observation="speech")
+    # from eagerx_demo.partnr.node import Partnr
+    # from eagerx_demo.cliport.tasks.cameras import RealSenseD435
+    # from scipy.spatial.transform import Rotation as R
+    #
+    # cam_config = RealSenseD435.CONFIG
+    # cam_spec = cam_config_to_cam_spec(cam_config)
+    #
+    # ee_trans = [0, 0, 0.1]
+    # ee_rot = R.from_matrix([[1, 0, 0], [0, -1, 0], [0, 0, -1]]).as_quat().tolist()
 
-    from eagerx_demo.partnr.node import Partnr
-    from eagerx_demo.cliport.tasks.cameras import RealSenseD435
-    from scipy.spatial.transform import Rotation as R
-
-    cam_config = RealSenseD435.CONFIG
-    cam_spec = cam_config_to_cam_spec(cam_config)
-
-    ee_trans = [0, 0, 0.1]
-    ee_rot = R.from_matrix([[1, 0, 0], [0, -1, 0], [0, 0, -1]]).as_quat().tolist()
-
-    partnr = Partnr.make(name="partnr", rate=rate_partnr, cam_spec=cam_spec, ee_trans=ee_trans, ee_rot=ee_rot, debug=False)
-    graph.add(partnr)
-    graph.connect(source=speech.sensors.speech, target=partnr.inputs.speech)
-    graph.connect(source=partnr.outputs.pick_pos, observation="pick_pos")
-    graph.connect(source=partnr.outputs.pick_orn, observation="pick_orn")
-    graph.connect(source=partnr.outputs.place_pos, observation="place_pos")
-    graph.connect(source=partnr.outputs.place_orn, observation="place_orn")
+    # partnr = Partnr.make(name="partnr", rate=rate_partnr, cam_spec=cam_spec, ee_trans=ee_trans, ee_rot=ee_rot, debug=False)
+    # graph.add(partnr)
+    # graph.connect(source=speech.sensors.speech, target=partnr.inputs.speech)
+    # graph.connect(source=partnr.outputs.pick_pos, observation="pick_pos")
+    # graph.connect(source=partnr.outputs.pick_orn, observation="pick_orn")
+    # graph.connect(source=partnr.outputs.place_pos, observation="place_pos")
+    # graph.connect(source=partnr.outputs.place_orn, observation="place_orn")
 
     # Create camera
-    from eagerx_demo.realsense.objects import RealSense
+    # from eagerx_demo.realsense.objects import RealSense
     import numpy as np
-
-    image_size = RealSenseD435.CONFIG[0]["image_size"]
-    focal_len = RealSenseD435.CONFIG[0]["intrinsics"][0]
-    znear, zfar = RealSenseD435.CONFIG[0]["zrange"]
-    fovh = (image_size[0] / 2) / focal_len
-    fovh = 180 * np.arctan(fovh) * 2 / np.pi
-
-    cam = RealSense.make(
-        name="d435",
-        rate=rate_cam,
-        states=[],
-        mode="rgbd",
-        render_shape=list(image_size),
-        base_pos=list(RealSenseD435.front_position),
-        base_or=list(RealSenseD435.front_rotation),
-        urdf=os.path.dirname(eagerx_interbotix.__file__) + "/camera/assets/realsense2_d435.urdf",
-        optical_link="camera_bottom_screw_frame",
-        calibration_link="camera_bottom_screw_frame",
-        fov=float(fovh),
-        near_val=float(znear),
-        far_val=float(zfar),
-    )
-    graph.add(cam)
+    #
+    # image_size = RealSenseD435.CONFIG[0]["image_size"]
+    # focal_len = RealSenseD435.CONFIG[0]["intrinsics"][0]
+    # znear, zfar = RealSenseD435.CONFIG[0]["zrange"]
+    # fovh = (image_size[0] / 2) / focal_len
+    # fovh = 180 * np.arctan(fovh) * 2 / np.pi
+    #
+    # cam = RealSense.make(
+    #     name="d435",
+    #     rate=rate_cam,
+    #     states=[],
+    #     mode="rgbd",
+    #     render_shape=list(image_size),
+    #     base_pos=list(RealSenseD435.front_position),
+    #     base_or=list(RealSenseD435.front_rotation),
+    #     urdf=os.path.dirname(eagerx_interbotix.__file__) + "/camera/assets/realsense2_d435.urdf",
+    #     optical_link="camera_bottom_screw_frame",
+    #     calibration_link="camera_bottom_screw_frame",
+    #     fov=float(fovh),
+    #     near_val=float(znear),
+    #     far_val=float(zfar),
+    # )
+    # graph.add(cam)
 
     # Connect
-    graph.connect(source=cam.sensors.color, target=partnr.inputs.color)
-    graph.connect(source=cam.sensors.depth, target=partnr.inputs.depth)
-    graph.render(source=cam.sensors.color, rate=rate_cam, encoding="rgb")
+    # graph.connect(source=cam.sensors.color, target=partnr.inputs.color)
+    # graph.connect(source=cam.sensors.depth, target=partnr.inputs.depth)
+    # graph.render(source=cam.sensors.color, rate=rate_cam, encoding="rgb")
 
     graph.gui()
 
     # Create backend
-    # from eagerx.backends.single_process import SingleProcess
-    # backend = SingleProcess.make()
-    from eagerx.backends.ros1 import Ros1
-    backend = Ros1.make()
+    from eagerx.backends.single_process import SingleProcess
+    backend = SingleProcess.make()
+    # from eagerx.backends.ros1 import Ros1
+    # backend = Ros1.make()
 
     # Define engines
     from eagerx_pybullet.engine import PybulletEngine
