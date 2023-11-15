@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<robot name="bolt_holder">
+    <link name="baseLink">
+        <contact>
+            <lateral_friction value="0.3"/>
+            <rolling_friction value="0.0"/>
+            <contact_cfm value="0.0"/>
+            <contact_erp value="1.0"/>
+        </contact>
+
+        <inertial>
+            <origin xyz="0.060000000000000046 1.2806942662653983e-17 0.029392677294820944" rpy="0 0 0"/>
+            <mass value="0.07057190648025832"/>
+            <inertia ixx="6.1e-05" iyy="0.000202" izz="0.000148" ixy="-0.0" iyz="-0.0" ixz="-0.0"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="bolt_holder.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <material name="silver">
+                <color rgba="0.700 0.700 0.700 1.000"/>
+            </material>
+        </visual>
+<!--        <collision concave="yes">-->
+<!--            <origin xyz="0 0 0" rpy="0 0 0"/>-->
+<!--            <geometry>-->
+<!--                <mesh filename="bolt_holder.stl" scale="0.001 0.001 0.001"/>-->
+<!--            </geometry>-->
+<!--        </collision>-->
+    </link>
+</robot>

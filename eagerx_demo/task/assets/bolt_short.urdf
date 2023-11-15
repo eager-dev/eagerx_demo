@@ -1,0 +1,35 @@
+<?xml version="1.0" ?>
+<robot name="bolt_short">
+    <link name="baseLink">
+        <contact>
+            <lateral_friction value="10"/>
+            <rolling_friction value="0.0"/>
+            <contact_cfm value="0.0"/>
+            <contact_erp value="1.0"/>
+        </contact>
+
+        <inertial>
+            <origin xyz="-2.1298192955716385e-06 -1.7214306245443138e-06 0.040894843413992146" rpy="0 0 0"/>
+            <mass value="0.0859881123303028"/>
+            <inertia ixx="8.5e-05" iyy="8.5e-05" izz="2e-06" ixy="0.0" iyz="0.0" ixz="0.0"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="bolt_short.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <material name="silver">
+                <color rgba="0.700 0.700 0.700 1.000"/>
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0.05" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.004" length="0.1"/>
+            </geometry>
+<!--            <geometry>-->
+<!--                <mesh filename="bolt_short.stl" scale="0.001 0.001 0.001"/>-->
+<!--            </geometry>-->
+        </collision>
+    </link>
+</robot>

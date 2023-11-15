@@ -85,11 +85,16 @@ class ArmEnv(eagerx.BaseEnv):
 
     def _fake_observations(self, obs):
         if self._steps > 4:
+            holder_pos = np.array([0.3, 0.1, 0.])
+            engine_pos = np.array([0.3, -0.1, 0.])
+            third_bolt = np.array([0.08 - 0.015, 0. + 0.01, 0.175]) + holder_pos
+            interior_no_edge_big = [-0.063 - 0.015, 0.002 + 0.01, 0.164+0.1] + engine_pos
+
             cmd = {
-                "pick_pos": np.array([[0.3, -0.3, 0.15]], dtype="float32"),
-                "pick_orn": np.array([[1, 0.0, 0, 0.0]], dtype="float32"),
-                "place_pos": np.array([[0.3, 0.4, 0.15]], dtype="float32"),
-                "place_orn": np.array([[1, 0.0, 0, 0.0]], dtype="float32"),
+                "pick_pos": np.array([third_bolt], dtype="float32"),
+                "pick_orn": np.array([[1., 0., 0., 0.]], dtype="float32"),
+                "place_pos": np.array([interior_no_edge_big], dtype="float32"),
+                "place_orn": np.array([[1., 0., 0., 0.]], dtype="float32"),
             }
             obs.update(cmd)
         else:

@@ -143,14 +143,19 @@ if __name__ == "__main__":
 
     # Add Dummy object 'task' with a single EngineState that creates a task (if the engine is a PybulletEngine)
     if engine.config.entity_id == "eagerx_pybullet.engine/PybulletEngine":
-        from eagerx_demo.task.enginestates import TaskState
+        # from eagerx_demo.task.enginestates import TaskState
+        from eagerx_demo.task.agile import AgileTaskState
         from eagerx.core.space import Space
 
         task_es_name = "task"
-        task_es = TaskState.make(workspace=[0.2, 0.5, -0.3, 0.3])
+        task_es = AgileTaskState.make(engine_pos=[0.3, -0.1, 0.], holder_pos=[0.3, 0.1, 0.])
+        # task_es = TaskState.make(workspace=[0.2, 0.5, -0.3, 0.3])
         engine.add_object(task_es_name, urdf=None)
         task_es_space = Space(low=0, high=1, shape=(), dtype="int64")  # var that specifies the task.
         engine._add_engine_state(task_es_name, "reset", task_es, task_es_space.to_dict())
+
+        # Overwrite world_fn
+        engine.config.world_fn = "eagerx_demo.task.agile/world_with_table_and_plane"
 
     # Define environment
     from eagerx_demo.env import ArmEnv
@@ -163,7 +168,7 @@ if __name__ == "__main__":
         engine=engine,
         backend=backend,
         render_mode="human",
-        reset_ee_pose=[.6, 0.,  0.2,  1, 0.,  0.,  0],  # Position of the arm when reset (out-of-view)
+        reset_ee_pose=[.6, 0.,  0.2,  1, 0.,  0.,  0.],  # Position of the arm when reset (out-of-view)
         reset_gripper=[1.0],  # Gripper position when reset (open)
     )
 
