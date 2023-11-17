@@ -30,21 +30,23 @@ COLORS = {
     "gray": [186.0 / 255.0, 176.0 / 255.0, 172.0 / 255.0, 1.0],
 }
 
-BOLTS_HOLDER = {"first": [0.0, 0.0, 0.06],  # todo: assumes no rotation --> adapt to pose
-                "second": [0.04, 0., 0.06],
-                "third": [0.08, 0., 0.06],
-                "fourth": [0.12, 0., 0.06]}
+BOLTS_HOLDER = {
+    "first": [0.0, 0.0, 0.075],  # todo: assumes no rotation --> adapt to pose
+    "second": [0.04, 0.0, 0.075],
+    "third": [0.08, 0.0, 0.075],
+    "fourth": [0.12, 0.0, 0.075],
+}
 Z = 0.164
 BOLTS_ENGINE = {
     "interior_no_edge_big": [-0.063, 0.002, Z],
     "interior_no_edge_medium": [-0.065, 0.065, Z],
-    "interior_with_edge_1": [-0.03, 0.012, Z+0.015],
-    "interior_with_edge_2": [-0.010, 0.042, Z+0.015],
-    "interior_with_edge_3": [-0.03, 0.068, Z+0.015],
-    "outer_ring_1": [0.085, 0.0865, Z+0.015],
-    "outer_ring_2": [0.085, -0.05, Z+0.015],
-    "outer_ring_3": [-0.022, -0.0875, Z+0.015],
-    "outer_ring_4": [0.055, -0.0875, Z+0.015]
+    "interior_with_edge_1": [-0.03, 0.012, Z + 0.015],
+    "interior_with_edge_2": [-0.010, 0.042, Z + 0.015],
+    "interior_with_edge_3": [-0.03, 0.068, Z + 0.015],
+    "outer_ring_1": [0.085, 0.0865, Z + 0.015],
+    "outer_ring_2": [0.085, -0.05, Z + 0.015],
+    "outer_ring_3": [-0.022, -0.0875, Z + 0.015],
+    "outer_ring_4": [0.055, -0.0875, Z + 0.015],
 }
 
 
@@ -77,8 +79,8 @@ class AgileTaskState(eagerx.EngineState):
     @classmethod
     def make(cls, engine_pos=None, holder_pos=None, use_colors: List[str] = None):
         spec = cls.get_specification()
-        spec.config.holder_pos = use_colors if use_colors is not None else [0.3, 0.1, 0.]
-        spec.config.engine_pos = use_colors if use_colors is not None else [0.3, -0.1, 0.]  # -0.075
+        spec.config.holder_pos = holder_pos if holder_pos is not None else [0.3, 0.1, 0.0]
+        spec.config.engine_pos = engine_pos if engine_pos is not None else [0.3, -0.1, 0.0]  # -0.075
         spec.config.use_colors = use_colors if use_colors is not None else list(COLORS.keys())
         return spec
 
@@ -99,7 +101,7 @@ class AgileTaskState(eagerx.EngineState):
         self.holder_id = self._p.loadURDF(urdf_holder, self._holder_pos, [0, 0, 0, 1], useFixedBase=True)
         self.bolt_ids = {}
         for k, v in BOLTS_HOLDER.items():
-            pos_bolt = [v[0]+self._holder_pos[0], v[1]+self._holder_pos[1], v[2]+self._holder_pos[2]]
+            pos_bolt = [v[0] + self._holder_pos[0], v[1] + self._holder_pos[1], v[2] + self._holder_pos[2]]
             bolt_id = self._p.loadURDF(urdf_bolt, pos_bolt, [0, 1, 0, 0], useFixedBase=False)
             self.bolt_ids[k] = bolt_id
 

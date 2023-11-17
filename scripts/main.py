@@ -97,7 +97,7 @@ if __name__ == "__main__":
     graph.connect(source=speech.sensors.speech, observation="speech")
 
     from eagerx_demo.partnr.node import Partnr
-    from eagerx_demo.cliport.tasks.cameras import RealSenseD435
+    from eagerx_demo.realsense.cameras import RealSenseD435
     from scipy.spatial.transform import Rotation as R
 
     cam_config = RealSenseD435.CONFIG

@@ -23,13 +23,15 @@ class Partnr(eagerx.Node):
         rate: float,
         cam_spec: List[Dict[str, Any]],
         in_shape: List[int] = [320, 160, 6],
-        pix_size: float = 0.003125,
-        bounds: List[float] = [[0.05, 0.55], [-0.5, 0.5], [-0.08, 0.28]],
+        # pix_size: float = 0.003125,
+        pix_size: float = 0.0015625,
+        bounds: List[float] = [[0.35, 0.6], [-0.3, 0.2], [-0.03, 0.5]],
         act_threshold=0.9,
         attn_temp=0.05,
         trans_temp=0.05,
         ee_trans=None,
         ee_rot=None,
+        evaluate=False,
         debug=False,
     ) -> NodeSpec:
         """
@@ -56,7 +58,7 @@ class Partnr(eagerx.Node):
             data_dir=str(root_dir / "data"),
             agent="dummy_cliport",
             n_demos=5,
-            n_rotations=1,
+            n_rotations=36,
             batchnorm=False,
             lr=1e-4,
             max_epochs=100,
@@ -79,6 +81,7 @@ class Partnr(eagerx.Node):
         spec.config.trans_temp = trans_temp
         spec.config.ee_trans = ee_trans or [0, 0, 0]
         spec.config.ee_rot = ee_rot or [0, 0, 0, 1]
+        spec.config.evaluate = evaluate
 
         return spec
 
@@ -89,6 +92,7 @@ class Partnr(eagerx.Node):
         self.ee_trans = spec.config.ee_trans
         self.ee_rot = spec.config.ee_rot
         self.debug = spec.config.debug
+        self.evaluate = spec.config.evaluate
         self.pick_place = None
         self.updating = False
         self.inferring = False
@@ -133,7 +137,7 @@ class Partnr(eagerx.Node):
             self.inferring = True
             thread = Thread(target=self._act, args=(cmd, color_data, depth_data), daemon=True)
             thread.start()
-        elif not self.updating and not self.inferring and self.episode_number > 0 and not self.debug:
+        elif not self.evaluate and not self.updating and not self.inferring and self.episode_number > 0 and not self.debug:
             # Update model in separate thread
             self.updating = True
             thread = Thread(target=self._update_model, daemon=True)
@@ -168,7 +172,8 @@ class Partnr(eagerx.Node):
         print(act["pick"][:2])
         print(act["place"][:2])
         # Act if confidence is high enough, otherwise query for demonstration
-        if confidence > self.act_threshold:
+
+        if not self.evaluate and confidence > self.act_threshold:
             self.pick_place = utils.get_pick_place(act, self.ee_trans, self.ee_rot)
         else:
             img = act["img"][:, :, :3]

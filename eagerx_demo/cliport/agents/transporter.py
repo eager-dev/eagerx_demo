@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 from pytorch_lightning import LightningModule
 
-from eagerx_demo.cliport.tasks import cameras
+from eagerx_demo.realsense import cameras
 from eagerx_demo.cliport.utils import utils
 from eagerx_demo.cliport.models.core.attention import Attention
 from eagerx_demo.cliport.models.core.transport import Transport

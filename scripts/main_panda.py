@@ -11,16 +11,17 @@ if __name__ == "__main__":
     colors = enginestates.COLORS
     for color_1 in colors.keys():
         for color_2 in colors.keys():
-            prompt += f"Pick the {color_1} bolt and put it in the {color_2} nut. "
+            prompt += f"Pick the {color_1} bolt and put it in the outer ring. "
 
     robot_type = "panda"
     rtf = 0
     rate_env = 10
     rate_speech = 10
-    rate_xseries = 10
+    rate_panda = 10
     rate_partnr = 10
     rate_engine = 20
     rate_cam = 20
+    evaluate = True
 
     # Initialize empty graph
     graph = eagerx.Graph.create()
@@ -33,7 +34,7 @@ if __name__ == "__main__":
         sensors=["position", "ee_pos", "ee_orn", "gripper_position"],
         actuators=["moveit_to_ee_pose", "gripper_control"],
         states=["ee_pose", "velocity", "gripper"],
-        rate=rate_xseries,
+        rate=rate_panda,
         self_collision=False,
     )
     arm.config.sleep_positions = [0, 0, 0, -2.4, 0, 2.4, 0]
@@ -69,23 +70,22 @@ if __name__ == "__main__":
         device="cpu",
         ckpt="base.en",
         prompt=prompt,
-        audio_device=10,
-        type_commands=True,
+        type_commands=False,
     )
     graph.add(speech)
     graph.connect(source=speech.sensors.speech, observation="speech")
 
     from eagerx_demo.partnr.node import Partnr
-    from eagerx_demo.cliport.tasks.cameras import RealSenseD435
+    from eagerx_demo.realsense.cameras import RealSenseD435
     from scipy.spatial.transform import Rotation as R
 
     cam_config = RealSenseD435.CONFIG
     cam_spec = cam_config_to_cam_spec(cam_config)
 
-    ee_trans = [0, 0, 0.1]
+    ee_trans = [0, 0, 0]
     ee_rot = R.from_matrix([[1, 0, 0], [0, -1, 0], [0, 0, -1]]).as_quat().tolist()
 
-    partnr = Partnr.make(name="partnr", rate=rate_partnr, cam_spec=cam_spec, ee_trans=ee_trans, ee_rot=ee_rot, debug=False)
+    partnr = Partnr.make(name="partnr", rate=rate_partnr, cam_spec=cam_spec, ee_trans=ee_trans, ee_rot=ee_rot, debug=False, evaluate=evaluate)
     graph.add(partnr)
     graph.connect(source=speech.sensors.speech, target=partnr.inputs.speech)
     graph.connect(source=partnr.outputs.pick_pos, observation="pick_pos")
@@ -135,7 +135,6 @@ if __name__ == "__main__":
 
     # Define engines
     from eagerx_pybullet.engine import PybulletEngine
-
     engine = PybulletEngine.make(rate=rate_engine, gui=True, egl=True, sync=True, real_time_factor=rtf)
 
     # from eagerx_reality.engine import RealEngine
@@ -148,7 +147,7 @@ if __name__ == "__main__":
         from eagerx.core.space import Space
 
         task_es_name = "task"
-        task_es = AgileTaskState.make(engine_pos=[0.3, -0.1, 0.], holder_pos=[0.3, 0.1, 0.])
+        task_es = AgileTaskState.make(engine_pos=[0.45, 0.0, -0.1], holder_pos=[0.39326084, -0.1930181 ,  0.], use_colors=["blue", "green", "yellow", "red"])
         # task_es = TaskState.make(workspace=[0.2, 0.5, -0.3, 0.3])
         engine.add_object(task_es_name, urdf=None)
         task_es_space = Space(low=0, high=1, shape=(), dtype="int64")  # var that specifies the task.
@@ -168,8 +167,10 @@ if __name__ == "__main__":
         engine=engine,
         backend=backend,
         render_mode="human",
-        reset_ee_pose=[.6, 0.,  0.2,  1, 0.,  0.,  0.],  # Position of the arm when reset (out-of-view)
+        # reset_ee_pose=[.6, 0.,  0.2,  1, 0.,  0.,  0],  # Position of the arm when reset (out-of-view)
+        reset_ee_pose=[.3, -0.15,  0.5,  1., 0.,  0.,  0],  # Position of the arm when reset (out-of-view)
         reset_gripper=[1.0],  # Gripper position when reset (open)
+        force_start=True,
     )
 
     # Evaluate

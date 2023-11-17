@@ -104,7 +104,9 @@ class RealSense(eagerx.Object):
         import pybullet_data
 
         urdf = spec.config.urdf
-        spec.engine.urdf = urdf if isinstance(urdf, str) else "%s/%s.urdf" % (pybullet_data.getDataPath(), "cube_small")
+        spec.engine.urdf = (
+            urdf if isinstance(urdf, str) else None
+        )  # "%s/%s.urdf" % (pybullet_data.getDataPath(), "cube_small")
         # Initial position of baselink when urdf is loaded. Overwritten by state during the reset.
         spec.engine.basePosition = spec.config.base_pos
         # Initial orientation of baselink when urdf is loaded. Overwritten by state during the reset.

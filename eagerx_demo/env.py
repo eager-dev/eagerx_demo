@@ -7,7 +7,7 @@ import abc
 
 
 TASK_STATUS = {"cancelled": -2, "pending": -1, "ongoing": 0, "success": 1}
-GRIPPER_STATES = {"open": np.array([1.0], dtype="float32"), "closed": np.array([0.0], dtype="float32")}
+GRIPPER_STATES = {"open": np.array([1.0], dtype="float32"), "closed": np.array([0.1], dtype="float32")}
 RUNNING_STATES = {"running": 1, "stopping": 0}
 REV_TASK_STATUS = {v: k for k, v in TASK_STATUS.items()}
 REV_RUNNING_STATES = {v: k for k, v in RUNNING_STATES.items()}
@@ -85,16 +85,20 @@ class ArmEnv(eagerx.BaseEnv):
 
     def _fake_observations(self, obs):
         if self._steps > 4:
-            holder_pos = np.array([0.3, 0.1, 0.])
-            engine_pos = np.array([0.3, -0.1, 0.])
-            third_bolt = np.array([0.08 - 0.015, 0. + 0.01, 0.175]) + holder_pos
-            interior_no_edge_big = [-0.063 - 0.015, 0.002 + 0.01, 0.164+0.1] + engine_pos
-
+            holder_pos = np.array([0.39326084, -0.1930181, 0.0])
+            engine_pos = np.array([0.45, 0.0, -0.1])
+            third_bolt = np.array([0.08, 0.0, 0.075]) + holder_pos
+            pick_pos = third_bolt
+            Z = 0.164
+            outer_ring_1 = [0.085, 0.0865, Z + 0.015] + engine_pos
+            outer_ring_2 = [0.085, -0.05, Z + 0.015] + engine_pos
+            outer_ring_3 = [-0.022, -0.0875, Z + 0.015] + engine_pos
+            place_pos = outer_ring_1
             cmd = {
-                "pick_pos": np.array([third_bolt], dtype="float32"),
-                "pick_orn": np.array([[1., 0., 0., 0.]], dtype="float32"),
-                "place_pos": np.array([interior_no_edge_big], dtype="float32"),
-                "place_orn": np.array([[1., 0., 0., 0.]], dtype="float32"),
+                "pick_pos": np.array([pick_pos], dtype="float32"),
+                "pick_orn": np.array([[1.0, 0.0, 0.0, 0.0]], dtype="float32"),
+                "place_pos": np.array([place_pos], dtype="float32"),
+                "place_orn": np.array([[1.0, 0.0, 0.0, 0.0]], dtype="float32"),
             }
             obs.update(cmd)
         else:
@@ -115,6 +119,20 @@ class ArmEnv(eagerx.BaseEnv):
         # Step the environment
         obs = self._step(self._action)
         self._steps += 1
+
+        pick_pos = obs["pick_pos"][-1][:3]
+
+        pick_poses = [
+            [0.51229225, -0.193, 0.115],
+            [0.47309647, -0.193, 0.115],
+            [0.43143766, -0.193, 0.115],
+            [0.39326084, -0.1930181, 0.115],
+        ]
+        # get closest pick_pos
+        pick_pos = min(pick_poses, key=lambda x: np.linalg.norm(x - pick_pos))
+        obs["pick_pos"][-1][:3] = pick_pos
+
+        obs["place_pos"][-1][2] = 0.115
 
         # Used for debugging
         # obs = self._fake_observations(obs)
@@ -336,10 +354,14 @@ class Pick(Task):
             # Pre-grasp pose
             ee_pos_pre = np.array([self._ee_pos[0], self._ee_pos[1], self._ee_pos[2] + self._height], dtype="float32")
             ee_orn_pre = self._ee_orn
-            task_pre = MoveEE(f"{self.name}/pre_grasp to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=self._tol)
-            task_open = MoveGripper(f"{self.name}/open", gripper="open", num_updates=10, tol=5e-3)
+            task_pre = MoveEE(
+                f"{self.name}/pre_grasp to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, num_updates=50, tol=self._tol
+            )
+            task_open = MoveGripper(f"{self.name}/open", gripper="open", num_updates=10, tol=1e-3)
             # Grasp pose
-            task_grasp = MoveEE(f"{self.name}/grasp at xyz={self._ee_pos}", self._ee_pos, self._ee_orn, tol=self._tol)
+            task_grasp = MoveEE(
+                f"{self.name}/grasp at xyz={self._ee_pos}", self._ee_pos, self._ee_orn, num_updates=50, tol=self._tol
+            )
             task_close = MoveGripper(f"{self.name}/close", gripper="closed", num_updates=15, tol=5e-3)
             # Grasp
             task_lift = MoveEE(f"{self.name}/post_grasp to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=self._tol)
@@ -368,11 +390,13 @@ class Place(Task):
             task_pre = MoveEE(f"{self.name}/pre_place to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=self._tol)
             # Place pose
             task_place = MoveEE(
-                f"{self.name}/place at xyz={self._ee_pos}", self._ee_pos, self._ee_orn, tol=self._tol
+                f"{self.name}/place at xyz={self._ee_pos}", self._ee_pos, self._ee_orn, num_updates=200, tol=self._tol
             )  # TODO: INCREASE TOLERANCE & NUM_UPDATES DUE TO SPIRALING SEARCH.
             task_open = MoveGripper(f"{self.name}/open", gripper="open", num_updates=10, tol=5e-3)
             # Return to pre-place pose
-            task_lift = MoveEE(f"{self.name}/post_place to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=self._tol)
+            task_lift = MoveEE(
+                f"{self.name}/post_place to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, num_updates=50, tol=self._tol
+            )
             # Add tasks to queue
             # Notice reverse order, because we are left-extending the queue.
             queue.extendleft(reversed([task_pre, task_place, task_open, task_lift]))
