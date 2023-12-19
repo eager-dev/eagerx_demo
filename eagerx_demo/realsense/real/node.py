@@ -84,8 +84,7 @@ class RealSenseSensor(EngineNode):
                 self.color_image = np.asanyarray(color_frame.get_data(), dtype=np.uint8)
                 if "d" in self.mode:
                     depth_frame = frames.get_depth_frame()
-                    self.depth_image = np.asanyarray(depth_frame.get_data(), dtype=np.float32) / 1000.0
-
+                    self.depth_image = np.asanyarray(depth_frame.get_data(), dtype=np.float32) / 10000.0
         except Exception as e:
             print(e)
             self.pipeline.stop()

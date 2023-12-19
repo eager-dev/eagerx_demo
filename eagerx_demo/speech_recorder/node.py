@@ -30,6 +30,7 @@ class SpeechInput(eagerx.EngineNode):
         channels: int = 1,
         subtype: str = None,
         type_commands: bool = False,
+        check_commands: bool = False,
         device: str = "cpu",
         ckpt: str = "base.en",
         prompt: str = None,
@@ -47,6 +48,7 @@ class SpeechInput(eagerx.EngineNode):
             channels=channels,
             subtype=subtype,
             type_commands=type_commands,
+            check_commands=check_commands,
             device=device,
             ckpt=ckpt,
             prompt=prompt,
@@ -69,6 +71,7 @@ class SpeechInput(eagerx.EngineNode):
 
         # In type_commands mode we don't record audio
         self.type_commands = spec.config.type_commands
+        self.check_commands = spec.config.check_commands
         self.test = spec.config.test
         if self.type_commands or self.test:
             self.device_info = {}
@@ -168,7 +171,7 @@ class SpeechInput(eagerx.EngineNode):
                         **kwargs,
                     )
                 self.input = result["text"]
-                if "stop" in result["text"].lower():
+                if "stop" in result["text"].lower() or not self.check_commands:
                     self.correct = True
                 else:
                     print(f"Is the following command correct?\n{result['text']}\n(y/n)")

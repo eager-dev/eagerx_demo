@@ -7,6 +7,7 @@ import os
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 from eagerx_demo.utils import cam_spec_to_cam_config
+from copy import deepcopy
 
 
 def get_pick_place(act, ee_trans, ee_rot):
@@ -53,6 +54,31 @@ def demonstration_pixels_to_act(act, points, bounds, pix_size):
     act["pick"] = [pick[0], pick[1], p0_theta]
     act["place"] = [place[0], place[1], p1_theta]
     return act
+
+def act_to_demonstration_pixels(act, pix_size):
+    # pixels = np.asarray(
+    #     [
+    #         [act["pick"][1], act["pick"][0]],
+    #         [act["pick"][1], act["pick"][0]],
+    #         [act["place"][1], act["place"][0]],
+    #         [act["place"][1], act["place"][0]],
+    #     ]
+    # )
+    
+    # Gripper width is 0.08 m.
+    # Take the gripper width and orientation into account when calculating the pick and place pixels.
+    gripper_width = 0.02 / pix_size
+    pick_theta = deepcopy(act["pick"][2])
+    place_theta = deepcopy(act["place"][2])
+    pixels = np.asarray(
+        [
+            [act["pick"][1] - np.sin(pick_theta) * gripper_width * 0.5, act["pick"][0] - np.cos(pick_theta) * gripper_width * 0.5],
+            [act["pick"][1] + np.sin(pick_theta) * gripper_width * 0.5, act["pick"][0] + np.cos(pick_theta) * gripper_width * 0.5],
+            [act["place"][1] - np.sin(place_theta) * gripper_width * 0.5, act["place"][0] - np.cos(place_theta) * gripper_width * 0.5],
+            [act["place"][1] + np.sin(place_theta) * gripper_width * 0.5, act["place"][0] + np.cos(place_theta) * gripper_width * 0.5],
+        ]
+    )
+    return pixels
 
 
 def initialize_cliport(cfg):
