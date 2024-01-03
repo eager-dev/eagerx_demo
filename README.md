@@ -21,8 +21,9 @@ Installation
 You can run the main code as follows:
 
 *Prerequisites:* Install [Poetry](https://python-poetry.org/docs/master/#installation) and [ROS](http://wiki.ros.org/noetic/Installation).
-For running the code with the real robot, the [interbotix_copilot](https://github.com/bheijden/interbotix_copilot) package is required.
-
+Requirements for usage with real Franka robot:
+- [ros noetic](http://wiki.ros.org/noetic/Installation/Ubuntu)
+- [franka_human_friendly_controllers](https://github.com/franzesegiovanni/franka_human_friendly_controllers) see [installation instructions](https://github.com/tud-phi/franka-emika-guide)
 
 ```bash
     git clone git@github.com:eager-dev/eagerx_demo.git
@@ -34,8 +35,9 @@ For running the code with the real robot, the [interbotix_copilot](https://githu
 Demo Overview
 -------------
 
-<img align="middle" src="demo_overview.png" width="100%" />
-
+<p align="center">
+  <img src="use_case.gif" width="100%"  alt="use_case"/> 
+</p>
 
 Cite EAGERx
 -----------

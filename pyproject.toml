@@ -30,6 +30,7 @@ torch = "1.12"
 torchvision = "0.13.0"
 numpy-quaternion = "^2022.4.3"
 eagerx-franka = "^0.0.8"
+pyrealsense2 = "^2.54.2.5684"
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"
