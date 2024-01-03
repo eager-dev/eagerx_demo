@@ -3,7 +3,6 @@ import eagerx_interbotix
 import os
 from eagerx_demo.utils import cam_config_to_cam_spec
 from pynput.keyboard import Key, Listener
-from moviepy.editor import ImageSequenceClip
 from pathlib import Path
 from eagerx_demo.cliport.dataset import augment_language
 
@@ -71,6 +70,7 @@ if __name__ == "__main__":
     pick_height = 0.097
     place_height = 0.11
     reset_pose = [.55, -0.075,  0.25,  1., 0.,  0.,  0]
+
     pix_size = 0.0015625
     bounds = [[pick_poses[0][0]-0.08, pick_poses[0][0]+0.17], [pick_poses[0][1] - 0.1, pick_poses[0][1]+0.4], [pick_height-0.13, place_height]]
 
@@ -239,8 +239,6 @@ if __name__ == "__main__":
     with Listener(on_press=on_press) as listener: 
         video_buffer = []    
         for eps in range(5000):
-            if stop:
-                break
             print(f"Episode {eps}")
             obs, info = env.reset()
             done = False
@@ -248,11 +246,5 @@ if __name__ == "__main__":
             while not done:
                 obs, reward, terminated, truncated, info = env.step(obs)
                 done = terminated or truncated or stop
-                rgb = env.supervisor.get_last_image()
-                if np.sum(rgb) > 0:
-                    video_buffer.append(rgb)
-
-    clip = ImageSequenceClip(video_buffer, fps=rate_cam)
-    clip.write_videofile(str(record_file), fps=rate_cam)
     listener.join()
     env.shutdown()

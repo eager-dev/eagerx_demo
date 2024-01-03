@@ -12,72 +12,84 @@ def test_demo(engine="single_process"):
         for color_2 in colors.keys():
             prompt += f"Pick the {color_1} bolt and put it in the {color_2} nut. "
 
-    robot_type = "vx300s"
+    robot_type = "panda"
     rtf = 0
     rate_env = 10
     rate_speech = 10
-    rate_xseries = 10
+    rate_panda = 10
     rate_partnr = 10
     rate_engine = 20
     rate_cam = 20
+    evaluate = False
+    real = False
+    ros = engine == "ros1"
+    type_commands = True
+    camera_window = 5
+
+    # We assume we know the possible pick poses
+    pick_poses = [
+        [ 0.531, -0.208,  0.097],
+        [ 0.572, -0.206,  0.097],
+        [ 0.613, -0.205,  0.097],
+        [ 0.652, -0.209,  0.097],
+    ]
+    pick_height = 0.097
+    place_height = 0.11
+    reset_pose = [.55, -0.075,  0.25,  1., 0.,  0.,  0]
+    pix_size = 0.0015625
+    bounds = [[pick_poses[0][0]-0.08, pick_poses[0][0]+0.17], [pick_poses[0][1] - 0.1, pick_poses[0][1]+0.4], [pick_height-0.13, place_height]]
+
+    
+    import numpy as np
+    from eagerx_demo.realsense.cameras import RealSenseConfig
+
+    cam_config = RealSenseConfig.CONFIG
+
+    cam_config = [cam_config[0]] * camera_window
+
+    image_size = cam_config[0]["image_size"]
+    focal_len = cam_config[0]["intrinsics"][0]
+    znear, zfar = cam_config[0]["zrange"]
+    fovh = (image_size[0] / 2) / focal_len
+    fovh = 180 * np.arctan(fovh) * 2 / np.pi
+
+    cam_spec = cam_config_to_cam_spec(cam_config)
 
     # Initialize empty graph
     graph = eagerx.Graph.create()
 
     # Create arm
-    from eagerx_interbotix.xseries.xseries import Xseries
-
-    arm = Xseries.make(
+    from eagerx_franka.franka_arm.franka_arm import FrankaArm
+    arm = FrankaArm.make(
         name=robot_type,
         robot_type=robot_type,
-        sensors=["moveit_status", "position", "ee_pos", "ee_orn", "gripper_position"],
-        actuators=["moveit_to", "gripper_control"],
-        states=["position", "velocity", "gripper"],
-        rate=rate_xseries,
+        sensors=["position", "ee_pos", "ee_orn", "gripper_position"],
+        actuators=["moveit_to_ee_pose", "gripper_control"],
+        states=["ee_pose", "velocity", "gripper"],
+        rate=rate_panda,
+        self_collision=False,
     )
+    arm.config.sleep_positions = [0, 0, 0, -2.4, 0, 2.4, 0]
     arm.states.gripper.space.update(low=[0.0], high=[1.0])  # Set gripper to closed position
-    arm.states.position.space.low[:] = arm.config.joint_lower
-    arm.states.position.space.high[:] = arm.config.joint_upper
     graph.add(arm)
 
-    # Create TaskSpaceControl
-    from eagerx_demo.ik.node import TaskSpaceControl
-
-    ik = TaskSpaceControl.make(
-        "task_space",
-        rate=rate_env,
-        joints=arm.config.joint_names,
-        upper=arm.config.joint_upper,
-        lower=arm.config.joint_lower,
-        ee_link=arm.config.gripper_link,
-        rest_poses=arm.config.sleep_positions,
-        gui=False,
-        robot_dict={"urdf": arm.config.urdf, "basePosition": arm.config.base_pos, "baseOrientation": arm.config.base_or},
-    )
-    graph.add(ik)
-
     # Create reset node
-    from eagerx_demo.reset.node import ResetArm
+    from eagerx_demo.reset.node import ResetEEPose
 
-    reset = ResetArm.make(
-        "reset", rate=rate_env, upper=arm.config.joint_upper, lower=arm.config.joint_lower, threshold=0.02, timeout=8.0
-    )
+    reset = ResetEEPose.make("reset", rate=rate_env, threshold=0.02, timeout=8.0)
     graph.add(reset)
 
     # Connect
-    graph.connect(action="ee_pos", target=ik.inputs.ee_pos)
-    graph.connect(action="ee_orn", target=ik.inputs.ee_orn)
-    graph.connect(source=arm.sensors.position, target=ik.inputs.position)
-    graph.connect(source=ik.outputs.goal, target=reset.feedthroughs.joints)
-    graph.connect(source=arm.states.position, target=reset.targets.goal_joints)
+    graph.connect(action="ee_pose", target=reset.feedthroughs.ee_pose)
+    graph.connect(source=arm.states.ee_pose, target=reset.targets.goal_ee_pose)
     graph.connect(source=arm.states.gripper, target=reset.targets.goal_gripper)
-    graph.connect(source=reset.outputs.joints, target=arm.actuators.moveit_to)
+    graph.connect(source=reset.outputs.ee_pose, target=arm.actuators.moveit_to_ee_pose)
     graph.connect(action="gripper", target=reset.feedthroughs.gripper)
     graph.connect(source=reset.outputs.gripper, target=arm.actuators.gripper_control)
-    graph.connect(source=arm.sensors.position, target=reset.inputs.joints)
+    graph.connect(source=arm.sensors.ee_pos, target=reset.inputs.ee_pos)
+    graph.connect(source=arm.sensors.ee_orn, target=reset.inputs.ee_orn)
     graph.connect(source=arm.sensors.ee_pos, observation="ee_pos")
     graph.connect(source=arm.sensors.ee_orn, observation="ee_orn")
-    graph.connect(source=arm.sensors.moveit_status, observation="moveit_status", skip=True)
     graph.connect(source=arm.sensors.position, observation="joint_pos")
     graph.connect(source=arm.sensors.gripper_position, observation="gripper_pos")
 
@@ -87,26 +99,21 @@ def test_demo(engine="single_process"):
     speech = SpeechRecorder.make(
         name="speech_recorder",
         rate=rate_speech,
-        device="cpu",
-        ckpt="base.en",
+        device="cuda",
+        ckpt="tiny.en",
         prompt=prompt,
-        test=True,
+        type_commands=type_commands,
     )
     graph.add(speech)
     graph.connect(source=speech.sensors.speech, observation="speech")
 
     from eagerx_demo.partnr.node import Partnr
-    from eagerx_demo.realsense.cameras import RealSenseD435
     from scipy.spatial.transform import Rotation as R
 
-    cam_config = RealSenseD435.CONFIG
-    cam_spec = cam_config_to_cam_spec(cam_config)
+    ee_trans = [0, 0, 0]
+    ee_rot = R.from_matrix([[1, 0, 0], [0, -1, 0], [0, 0, -1]]).as_quat().tolist()
 
-    ee_trans = [0, 0, 0.0]
-    ee_rot = R.from_matrix([[0, 0, 1], [0, 1, 0], [-1, 0, 0]]).as_quat().tolist()
-
-    partnr = Partnr.make(name="partnr", rate=rate_partnr, cam_spec=cam_spec, ee_trans=ee_trans, ee_rot=ee_rot, debug=False)
-    partnr.config.train.gpu = None
+    partnr = Partnr.make(name="partnr", rate=rate_partnr, cam_spec=cam_spec, ee_trans=ee_trans, ee_rot=ee_rot, debug=True, evaluate=evaluate, pix_size=pix_size, bounds=bounds, camera_window=camera_window)
     graph.add(partnr)
     graph.connect(source=speech.sensors.speech, target=partnr.inputs.speech)
     graph.connect(source=partnr.outputs.pick_pos, observation="pick_pos")
@@ -116,13 +123,6 @@ def test_demo(engine="single_process"):
 
     # Create camera
     from eagerx_demo.realsense.objects import RealSense
-    import numpy as np
-
-    image_size = RealSenseD435.CONFIG[0]["image_size"]
-    focal_len = RealSenseD435.CONFIG[0]["intrinsics"][0]
-    znear, zfar = RealSenseD435.CONFIG[0]["zrange"]
-    fovh = (image_size[0] / 2) / focal_len
-    fovh = 180 * np.arctan(fovh) * 2 / np.pi
 
     cam = RealSense.make(
         name="d435",
@@ -130,8 +130,8 @@ def test_demo(engine="single_process"):
         states=[],
         mode="rgbd",
         render_shape=list(image_size),
-        base_pos=list(RealSenseD435.front_position),
-        base_or=list(RealSenseD435.front_rotation),
+        base_pos=list(cam_config[0]["position"]),
+        base_or=list(cam_config[0]["rotation"]),
         urdf=os.path.dirname(eagerx_interbotix.__file__) + "/camera/assets/realsense2_d435.urdf",
         optical_link="camera_bottom_screw_frame",
         calibration_link="camera_bottom_screw_frame",
@@ -142,34 +142,38 @@ def test_demo(engine="single_process"):
     graph.add(cam)
 
     # Connect
-    graph.connect(source=cam.sensors.color, target=partnr.inputs.color)
-    graph.connect(source=cam.sensors.depth, target=partnr.inputs.depth)
-    graph.render(source=cam.sensors.color, rate=rate_cam, encoding="rgb")
+    graph.connect(source=cam.sensors.color, target=partnr.inputs.color, window=camera_window)
+    graph.connect(source=cam.sensors.depth, target=partnr.inputs.depth, window=camera_window)
 
     # Create backend
-    if engine == "single_process":
-        from eagerx.backends.single_process import SingleProcess
-        backend = SingleProcess.make()
-    elif engine == "ros1":
+    if ros: 
         from eagerx.backends.ros1 import Ros1
         backend = Ros1.make()
     else:
-        raise ValueError(f"Unknown engine: {engine}")
+        from eagerx.backends.single_process import SingleProcess
+        backend = SingleProcess.make()
 
     # Define engines
-    from eagerx_pybullet.engine import PybulletEngine
-    engine = PybulletEngine.make(rate=rate_engine, gui=False, egl=False, sync=True, real_time_factor=rtf)
+    if real:
+        from eagerx_reality.engine import RealEngine
+        engine = RealEngine.make(rate=rate_engine, sync=True)
+    else:
+        from eagerx_pybullet.engine import PybulletEngine
+        engine = PybulletEngine.make(rate=rate_engine, gui=False, egl=False, sync=True, real_time_factor=rtf)
 
     # Add Dummy object 'task' with a single EngineState that creates a task (if the engine is a PybulletEngine)
     if engine.config.entity_id == "eagerx_pybullet.engine/PybulletEngine":
-        from eagerx_demo.task.enginestates import TaskState
+        # from eagerx_demo.task.enginestates import TaskState
+        from eagerx_demo.task.agile import AgileTaskState
         from eagerx.core.space import Space
-
         task_es_name = "task"
-        task_es = TaskState.make(workspace=[0.2, 0.5, -0.3, 0.3])
+        task_es = AgileTaskState.make(engine_pos=[pick_poses[0][0]+0.1, 0.0, -0.1], holder_pos=[pick_poses[0][0], pick_poses[0][1],  0.0], use_colors=["blue", "green", "yellow", "red"])
         engine.add_object(task_es_name, urdf=None)
         task_es_space = Space(low=0, high=1, shape=(), dtype="int64")  # var that specifies the task.
         engine._add_engine_state(task_es_name, "reset", task_es, task_es_space.to_dict())
+
+        # Overwrite world_fn
+        engine.config.world_fn = "eagerx_demo.task.agile/world_with_table_and_plane"
 
     # Define environment
     from eagerx_demo.env import ArmEnv
@@ -181,10 +185,15 @@ def test_demo(engine="single_process"):
         graph=graph,
         engine=engine,
         backend=backend,
-        render_mode="rgb_array",
-        reset_position=[0, -0.91435647, 0.85219240, 0, 1.6239657, 0],  # Position of the arm when reset (out-of-view)
+        render_mode=None,
+        reset_ee_pose=reset_pose,  # Position of the arm when reset (out-of-view)
         reset_gripper=[1.0],  # Gripper position when reset (open)
+        pick_poses=pick_poses,
+        pick_height=pick_height,
+        place_height=place_height,
+        force_start=True,
     )
+
 
     # Evaluate
     action_space = env.action_space
