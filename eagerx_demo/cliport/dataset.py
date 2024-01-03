@@ -3,6 +3,7 @@
 import os
 import pickle
 import warnings
+from copy import deepcopy
 
 import numpy as np
 from torch.utils.data import Dataset
@@ -11,6 +12,288 @@ from eagerx_demo.cliport.utils import utils
 
 # Names as strings, REVERSE-sorted so longer (more specific) names are first.
 TASK_NAMES = [""]
+
+OBJECTS = ["bolt", "screw", "thing", "item", "fastener", "one"]
+PICK_ACTIONS = ["pick", "grab", "take", "get"]
+PLACE_ACTIONS = ["place", "put", "set", "drop"]
+PREAMBLES = [
+    "can you",
+    "please",
+    "will you",
+    "could you",
+    "would you",
+    "can you please",
+    "please can you",
+    "please will you",
+    "will you please",
+    "could you please",
+    "please could you",
+    "could you please",
+    "would you please",
+    "please would you",
+    "would you please",
+    "can you please",
+    "please can you",
+    "please will you",
+    "will you please",
+    "could you please",
+    "please could you",
+    "could you please",
+    "would you please",
+    "please would you",
+    "would you please",
+]
+GREETINGS = ["hello", "hi", "hey", "howdy", "greetings", "good morning", "good afternoon", "good evening", "yo"]
+GREETINGS = GREETINGS + [greeting + " robot" for greeting in GREETINGS]
+TOP_LEFTS = ["top left", "upper left", "left top", "left upper"]
+TOP_RIGHTS = ["top right", "upper right", "right top", "right upper"]
+BOTTOM_LEFTS = ["bottom left", "lower left", "left bottom", "left lower", "lower left hand corner"]
+BOTTOM_RIGHTS = ["bottom right", "lower right", "right bottom", "right lower", "lower right hand corner"]
+MIDDLE_LEFTS = ["middle left", "left middle", "center left", "left center", "upper one of the lower left corner"]
+MIDDLE_RIGHTS = ["middle right", "right middle", "center right", "right center", "upper one of the lower right corner"]
+LEFT_TUBES = [
+    "left tube",
+    "left pipe",
+    "left cylinder",
+    "tube on the left",
+    "pipe on the left",
+    "cylinder on the left",
+    "lefthand tube",
+    "lefthand pipe",
+    "lefthand cylinder",
+    "tube on the lefthand side",
+    "pipe on the lefthand side",
+    "cylinder on the lefthand side",
+    "tube on the left hand side",
+    "pipe on the left hand side",
+    "cylinder on the left hand side",
+]
+RIGHT_TUBES = [
+    "right tube",
+    "right pipe",
+    "right cylinder",
+    "tube on the right",
+    "pipe on the right",
+    "cylinder on the right",
+    "righthand tube",
+    "righthand pipe",
+    "righthand cylinder",
+    "tube on the righthand side",
+    "pipe on the righthand side",
+    "cylinder on the righthand side",
+    "tube on the right hand side",
+    "pipe on the right hand side",
+    "cylinder on the right hand side",
+]
+MIDDLE_TUBES = [
+    "middle tube",
+    "middle pipe",
+    "middle cylinder",
+    "tube in the middle",
+    "pipe in the middle",
+    "cylinder in the middle",
+]
+HOLES = ["hole", "opening", "insertion point", "cavity"]
+ALL = (
+    OBJECTS
+    + PICK_ACTIONS
+    + PLACE_ACTIONS
+    + PREAMBLES
+    + GREETINGS
+    + TOP_LEFTS
+    + TOP_RIGHTS
+    + BOTTOM_LEFTS
+    + BOTTOM_RIGHTS
+    + MIDDLE_LEFTS
+    + MIDDLE_RIGHTS
+    + LEFT_TUBES
+    + RIGHT_TUBES
+    + MIDDLE_TUBES
+    + HOLES
+)
+
+
+def augment_language(language):
+    """Augment language with new words and phrases."""
+    if language.startswith(" ") or language.startswith(","):
+        language = language[1:]
+    # make sure language is lowercase
+    language = language.lower()
+    # remove punctuation
+    language = language.replace(",", "")
+    language = language.replace(".", "")
+    language = language.replace("!", "")
+    language = language.replace("?", "")
+
+    # divide language into words
+    words = language.split(" ")
+
+    # check for PREAMBLES
+    preamble_in_language = False
+    for preamble in PREAMBLES:
+        if preamble in language:
+            preamble_words = preamble.split(" ")
+            all_words_in_language = True
+            for preamble_word in preamble_words:
+                if preamble_word not in words:
+                    all_words_in_language = False
+                    break
+            if all_words_in_language:
+                text_without_preamble = deepcopy(ALL)
+                text_without_preamble.remove(preamble)
+                for text in text_without_preamble:
+                    if preamble in text:
+                        if text not in language:
+                            if np.random.random() < 0.5:
+                                random_preamble = np.random.choice(PREAMBLES)
+                                language = language.replace(preamble, random_preamble)
+                            preamble_in_language = True
+                            break
+            if preamble_in_language:
+                break
+    greeting_in_language = False
+    for greeting in GREETINGS:
+        if greeting in language:
+            greeting_words = greeting.split(" ")
+            all_words_in_language = True
+            for greeting_word in greeting_words:
+                if greeting_word not in words:
+                    all_words_in_language = False
+                    break
+            if all_words_in_language:
+                text_without_greeting = deepcopy(ALL)
+                text_without_greeting.remove(greeting)
+                for text in text_without_greeting:
+                    if greeting in text:
+                        if text not in language:
+                            if np.random.random() < 0.5:
+                                random_greeting = np.random.choice(GREETINGS)
+                                if not preamble_in_language:
+                                    if np.random.random() < 0.5:
+                                        random_greeting = np.random.choice(PREAMBLES) + " " + random_greeting
+                                language = language.replace(greeting, random_greeting)
+                                greeting_in_language = True
+                                break
+            if greeting_in_language:
+                break
+    if not greeting_in_language:
+        if not preamble_in_language:
+            if np.random.random() < 0.5:
+                random_preamble = np.random.choice(PREAMBLES)
+                language = random_preamble + " " + language
+        if np.random.random() < 0.5:
+            random_greeting = np.random.choice(GREETINGS)
+            language = random_greeting + " " + language
+    for obj in OBJECTS:
+        if obj in language:
+            obj_words = obj.split(" ")
+            all_words_in_language = True
+            for obj_word in obj_words:
+                if obj_word not in words:
+                    all_words_in_language = False
+                    break
+            if all_words_in_language:
+                text_without_obj = deepcopy(ALL)
+                text_without_obj.remove(obj)
+                for text in text_without_obj:
+                    if obj in text:
+                        if text not in language:
+                            random_obj = np.random.choice(OBJECTS)
+                            language = language.replace(obj, random_obj)
+                            break
+            if all_words_in_language:
+                break
+    for pick_action in PICK_ACTIONS:
+        if pick_action in language:
+            pick_action_words = pick_action.split(" ")
+            all_words_in_language = True
+            for pick_action_word in pick_action_words:
+                if pick_action_word not in words:
+                    all_words_in_language = False
+                    break
+            if all_words_in_language:
+                text_without_pick_action = deepcopy(ALL)
+                text_without_pick_action.remove(pick_action)
+                for text in text_without_pick_action:
+                    if pick_action in text:
+                        if text not in language:
+                            random_pick_action = np.random.choice(PICK_ACTIONS)
+                            language = language.replace(pick_action, random_pick_action)
+                            break
+            if all_words_in_language:
+                break
+    for place_action in PLACE_ACTIONS:
+        if place_action in language:
+            place_action_words = place_action.split(" ")
+            all_words_in_language = True
+            for place_action_word in place_action_words:
+                if place_action_word not in words:
+                    all_words_in_language = False
+                    break
+            if all_words_in_language:
+                text_without_place_action = deepcopy(ALL)
+                text_without_place_action.remove(place_action)
+                for text in text_without_place_action:
+                    if place_action in text:
+                        if text not in language:
+                            random_place_action = np.random.choice(PLACE_ACTIONS)
+                            language = language.replace(place_action, random_place_action)
+                            break
+            if all_words_in_language:
+                break
+    locations = [
+        TOP_LEFTS,
+        TOP_RIGHTS,
+        BOTTOM_LEFTS,
+        BOTTOM_RIGHTS,
+        MIDDLE_LEFTS,
+        MIDDLE_RIGHTS,
+        LEFT_TUBES,
+        RIGHT_TUBES,
+        MIDDLE_TUBES,
+    ]
+    for location in locations:
+        for loc in location:
+            if loc in language:
+                loc_words = loc.split(" ")
+                all_words_in_language = True
+                for loc_word in loc_words:
+                    if loc_word not in words:
+                        all_words_in_language = False
+                        break
+                if all_words_in_language:
+                    text_without_loc = deepcopy(ALL)
+                    text_without_loc.remove(loc)
+                    for text in text_without_loc:
+                        if loc in text:
+                            if text not in language:
+                                random_loc = np.random.choice(location)
+                                language = language.replace(loc, random_loc)
+                                break
+                if all_words_in_language:
+                    break
+        if all_words_in_language:
+            break
+    for hole in HOLES:
+        if hole in language:
+            hole_words = hole.split(" ")
+            all_words_in_language = True
+            for hole_word in hole_words:
+                if hole_word not in words:
+                    all_words_in_language = False
+                    break
+            if all_words_in_language:
+                text_without_hole = deepcopy(ALL)
+                text_without_hole.remove(hole)
+                for text in text_without_hole:
+                    if hole in text:
+                        if text not in language:
+                            random_hole = np.random.choice(HOLES)
+                            language = language.replace(hole, random_hole)
+                            break
+            if all_words_in_language:
+                break
+    return language
 
 
 class RavensDataset(Dataset):
@@ -187,7 +470,7 @@ class RavensDataset(Dataset):
             warnings.warn("No language goal. Defaulting to 'task completed.'")
 
         if info and "lang_goal" in info:
-            sample["lang_goal"] = info["lang_goal"]
+            sample["lang_goal"] = augment_language(info["lang_goal"])
         else:
             sample["lang_goal"] = "task completed."
 
@@ -232,7 +515,6 @@ class RavensDataset(Dataset):
 
         # Return random observation action pair (and goal) from episode.
         i = np.random.choice(range(len(episode)))
-        # g = i + 1 if is_sequential_task else -1
         sample, goal = episode[i], episode[-1]
 
         # Process sample.

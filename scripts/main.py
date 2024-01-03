@@ -2,83 +2,129 @@ import eagerx
 import eagerx_interbotix
 import os
 from eagerx_demo.utils import cam_config_to_cam_spec
-from eagerx_demo.task import enginestates
+from pynput.keyboard import Key, Listener
+from pathlib import Path
+from eagerx_demo.cliport.dataset import augment_language
+
+
+OBJECTS = ["bolt", "screw", "thing", "item", "fastener", "one"]
+PICK_ACTIONS = ["pick", "grab", "take", "get"]
+PLACE_ACTIONS = ["place", "put", "set", "drop"]
+PREAMBLES = ["can you", "please", "will you", "could you", "would you", "can you please", "please can you", "please will you", "will you please", "could you please", "please could you", "could you please", "would you please", "please would you", "would you please", "can you please", "please can you", "please will you", "will you please", "could you please", "please could you", "could you please", "would you please", "please would you", "would you please"]
+GREETINGS = ["hello", "hi", "hey", "howdy", "greetings", "good morning", "good afternoon", "good evening", "yo"]
+GREETINGS = GREETINGS + [greeting + " robot" for greeting in GREETINGS]
+TOP_LEFTS = ["top left", "upper left", "left top", "left upper"]
+TOP_RIGHTS = ["top right", "upper right", "right top", "right upper"]
+BOTTOM_LEFTS = ["bottom left", "lower left", "left bottom", "left lower", "lower left hand corner"]
+BOTTOM_RIGHTS = ["bottom right", "lower right", "right bottom", "right lower", "lower right hand corner"]
+MIDDLE_LEFTS = ["middle left", "left middle", "center left", "left center", "upper one of the lower left corner"]
+MIDDLE_RIGHTS = ["middle right", "right middle", "center right", "right center", "upper one of the lower right corner"]
+LEFT_TUBES = ["left tube", "left pipe", "left cylinder", "tube on the left", "pipe on the left", "cylinder on the left", "lefthand tube", "lefthand pipe", "lefthand cylinder", "tube on the lefthand side", "pipe on the lefthand side", "cylinder on the lefthand side", "tube on the left hand side", "pipe on the left hand side", "cylinder on the left hand side"]
+RIGHT_TUBES = ["right tube", "right pipe", "right cylinder", "tube on the right", "pipe on the right", "cylinder on the right", "righthand tube", "righthand pipe", "righthand cylinder", "tube on the righthand side", "pipe on the righthand side", "cylinder on the righthand side", "tube on the right hand side", "pipe on the right hand side", "cylinder on the right hand side"]
+MIDDLE_TUBES = ["middle tube", "middle pipe", "middle cylinder", "tube in the middle", "pipe in the middle", "cylinder in the middle"]
+HOLES = ["hole", "opening", "insertion point", "cavity"]
+ALL = OBJECTS + PICK_ACTIONS + PLACE_ACTIONS + PREAMBLES + GREETINGS + TOP_LEFTS + TOP_RIGHTS + BOTTOM_LEFTS + BOTTOM_RIGHTS + MIDDLE_LEFTS + MIDDLE_RIGHTS + LEFT_TUBES + RIGHT_TUBES + MIDDLE_TUBES + HOLES
+
+
+def on_press(key):
+    if key == Key.esc:
+        # Stop listener
+        global stop
+        stop = True
+        print("Stop")
 
 
 if __name__ == "__main__":
     eagerx.set_log_level(eagerx.FATAL)
     prompt = ""
-    colors = enginestates.COLORS
-    for color_1 in colors.keys():
-        for color_2 in colors.keys():
-            prompt += f"Pick the {color_1} bolt and put it in the {color_2} nut. "
+    colors = ["red", "blue", "green", "yellow"]
+    locations = ["left tube", "right tube", "middle tube", "top left hole", "top right hole", "bottom left hole", "bottom right hole"]
+    for _ in range(100):
+        for color_1 in colors:
+            for location in locations:
+                prompt += augment_language(f"Pick the {color_1} bolt and put it in the {location}")
 
-    robot_type = "vx300s"
+    robot_type = "panda"
     rtf = 0
     rate_env = 10
     rate_speech = 10
-    rate_xseries = 10
+    rate_panda = 10
     rate_partnr = 10
     rate_engine = 20
     rate_cam = 20
+    evaluate = False
+    real = True
+    ros = True
+    type_commands = False
+    camera_window = 5
+    record_file = Path("record.mp4")
+    stop = False
+
+    # We assume we know the possible pick poses
+    pick_poses = [
+        [ 0.531, -0.208,  0.097],
+        [ 0.572, -0.206,  0.097],
+        [ 0.613, -0.205,  0.097],
+        [ 0.652, -0.209,  0.097],
+    ]
+    pick_height = 0.097
+    place_height = 0.11
+    reset_pose = [.55, -0.075,  0.25,  1., 0.,  0.,  0]
+
+    pix_size = 0.0015625
+    bounds = [[pick_poses[0][0]-0.08, pick_poses[0][0]+0.17], [pick_poses[0][1] - 0.1, pick_poses[0][1]+0.4], [pick_height-0.13, place_height]]
+
+    
+    import numpy as np
+    from eagerx_demo.realsense.cameras import RealSenseConfig
+
+    cam_config = RealSenseConfig.CONFIG
+
+    cam_config = [cam_config[0]] * camera_window
+
+    image_size = cam_config[0]["image_size"]
+    focal_len = cam_config[0]["intrinsics"][0]
+    znear, zfar = cam_config[0]["zrange"]
+    fovh = (image_size[0] / 2) / focal_len
+    fovh = 180 * np.arctan(fovh) * 2 / np.pi
+
+    cam_spec = cam_config_to_cam_spec(cam_config)
 
     # Initialize empty graph
     graph = eagerx.Graph.create()
 
     # Create arm
-    from eagerx_interbotix.xseries.xseries import Xseries
-
-    arm = Xseries.make(
+    from eagerx_franka.franka_arm.franka_arm import FrankaArm
+    arm = FrankaArm.make(
         name=robot_type,
         robot_type=robot_type,
-        sensors=["moveit_status", "position", "ee_pos", "ee_orn", "gripper_position"],
-        actuators=["moveit_to", "gripper_control"],
-        states=["position", "velocity", "gripper"],
-        rate=rate_xseries,
+        sensors=["position", "ee_pos", "ee_orn", "gripper_position"],
+        actuators=["moveit_to_ee_pose", "gripper_control"],
+        states=["ee_pose", "velocity", "gripper"],
+        rate=rate_panda,
+        self_collision=False,
     )
+    arm.config.sleep_positions = [0, 0, 0, -2.4, 0, 2.4, 0]
     arm.states.gripper.space.update(low=[0.0], high=[1.0])  # Set gripper to closed position
-    arm.states.position.space.low[:] = arm.config.joint_lower
-    arm.states.position.space.high[:] = arm.config.joint_upper
     graph.add(arm)
 
-    # Create TaskSpaceControl
-    from eagerx_demo.ik.node import TaskSpaceControl
-
-    ik = TaskSpaceControl.make(
-        "task_space",
-        rate=rate_env,
-        joints=arm.config.joint_names,
-        upper=arm.config.joint_upper,
-        lower=arm.config.joint_lower,
-        ee_link=arm.config.gripper_link,
-        rest_poses=arm.config.sleep_positions,
-        gui=False,
-        robot_dict={"urdf": arm.config.urdf, "basePosition": arm.config.base_pos, "baseOrientation": arm.config.base_or},
-    )
-    graph.add(ik)
-
     # Create reset node
-    from eagerx_demo.reset.node import ResetArm
+    from eagerx_demo.reset.node import ResetEEPose
 
-    reset = ResetArm.make(
-        "reset", rate=rate_env, upper=arm.config.joint_upper, lower=arm.config.joint_lower, threshold=0.02, timeout=8.0
-    )
+    reset = ResetEEPose.make("reset", rate=rate_env, threshold=0.02, timeout=8.0)
     graph.add(reset)
 
     # Connect
-    graph.connect(action="ee_pos", target=ik.inputs.ee_pos)
-    graph.connect(action="ee_orn", target=ik.inputs.ee_orn)
-    graph.connect(source=arm.sensors.position, target=ik.inputs.position)
-    graph.connect(source=ik.outputs.goal, target=reset.feedthroughs.joints)
-    graph.connect(source=arm.states.position, target=reset.targets.goal_joints)
+    graph.connect(action="ee_pose", target=reset.feedthroughs.ee_pose)
+    graph.connect(source=arm.states.ee_pose, target=reset.targets.goal_ee_pose)
     graph.connect(source=arm.states.gripper, target=reset.targets.goal_gripper)
-    graph.connect(source=reset.outputs.joints, target=arm.actuators.moveit_to)
+    graph.connect(source=reset.outputs.ee_pose, target=arm.actuators.moveit_to_ee_pose)
     graph.connect(action="gripper", target=reset.feedthroughs.gripper)
     graph.connect(source=reset.outputs.gripper, target=arm.actuators.gripper_control)
-    graph.connect(source=arm.sensors.position, target=reset.inputs.joints)
+    graph.connect(source=arm.sensors.ee_pos, target=reset.inputs.ee_pos)
+    graph.connect(source=arm.sensors.ee_orn, target=reset.inputs.ee_orn)
     graph.connect(source=arm.sensors.ee_pos, observation="ee_pos")
     graph.connect(source=arm.sensors.ee_orn, observation="ee_orn")
-    graph.connect(source=arm.sensors.moveit_status, observation="moveit_status", skip=True)
     graph.connect(source=arm.sensors.position, observation="joint_pos")
     graph.connect(source=arm.sensors.gripper_position, observation="gripper_pos")
 
@@ -88,25 +134,21 @@ if __name__ == "__main__":
     speech = SpeechRecorder.make(
         name="speech_recorder",
         rate=rate_speech,
-        device="cpu",
-        ckpt="base.en",
+        device="cuda",
+        ckpt="tiny.en",
         prompt=prompt,
-        audio_device=10,
+        type_commands=type_commands,
     )
     graph.add(speech)
     graph.connect(source=speech.sensors.speech, observation="speech")
 
     from eagerx_demo.partnr.node import Partnr
-    from eagerx_demo.cliport.tasks.cameras import RealSenseD435
     from scipy.spatial.transform import Rotation as R
 
-    cam_config = RealSenseD435.CONFIG
-    cam_spec = cam_config_to_cam_spec(cam_config)
+    ee_trans = [0, 0, 0]
+    ee_rot = R.from_matrix([[1, 0, 0], [0, -1, 0], [0, 0, -1]]).as_quat().tolist()
 
-    ee_trans = [0, 0, 0.0]
-    ee_rot = R.from_matrix([[0, 0, 1], [0, 1, 0], [-1, 0, 0]]).as_quat().tolist()
-
-    partnr = Partnr.make(name="partnr", rate=rate_partnr, cam_spec=cam_spec, ee_trans=ee_trans, ee_rot=ee_rot, debug=False)
+    partnr = Partnr.make(name="partnr", rate=rate_partnr, cam_spec=cam_spec, ee_trans=ee_trans, ee_rot=ee_rot, debug=False, evaluate=evaluate, pix_size=pix_size, bounds=bounds, camera_window=camera_window)
     graph.add(partnr)
     graph.connect(source=speech.sensors.speech, target=partnr.inputs.speech)
     graph.connect(source=partnr.outputs.pick_pos, observation="pick_pos")
@@ -116,13 +158,6 @@ if __name__ == "__main__":
 
     # Create camera
     from eagerx_demo.realsense.objects import RealSense
-    import numpy as np
-
-    image_size = RealSenseD435.CONFIG[0]["image_size"]
-    focal_len = RealSenseD435.CONFIG[0]["intrinsics"][0]
-    znear, zfar = RealSenseD435.CONFIG[0]["zrange"]
-    fovh = (image_size[0] / 2) / focal_len
-    fovh = 180 * np.arctan(fovh) * 2 / np.pi
 
     cam = RealSense.make(
         name="d435",
@@ -130,8 +165,8 @@ if __name__ == "__main__":
         states=[],
         mode="rgbd",
         render_shape=list(image_size),
-        base_pos=list(RealSenseD435.front_position),
-        base_or=list(RealSenseD435.front_rotation),
+        base_pos=list(cam_config[0]["position"]),
+        base_or=list(cam_config[0]["rotation"]),
         urdf=os.path.dirname(eagerx_interbotix.__file__) + "/camera/assets/realsense2_d435.urdf",
         optical_link="camera_bottom_screw_frame",
         calibration_link="camera_bottom_screw_frame",
@@ -142,36 +177,41 @@ if __name__ == "__main__":
     graph.add(cam)
 
     # Connect
-    graph.connect(source=cam.sensors.color, target=partnr.inputs.color)
-    graph.connect(source=cam.sensors.depth, target=partnr.inputs.depth)
+    graph.connect(source=cam.sensors.color, target=partnr.inputs.color, window=camera_window)
+    graph.connect(source=cam.sensors.depth, target=partnr.inputs.depth, window=camera_window)
     graph.render(source=cam.sensors.color, rate=rate_cam, encoding="rgb")
 
-    # graph.gui()
+    graph.gui()
 
     # Create backend
-    # from eagerx.backends.single_process import SingleProcess
-    # backend = SingleProcess.make()
-    from eagerx.backends.ros1 import Ros1
-    backend = Ros1.make()
+    if ros: 
+        from eagerx.backends.ros1 import Ros1
+        backend = Ros1.make()
+    else:
+        from eagerx.backends.single_process import SingleProcess
+        backend = SingleProcess.make()
 
     # Define engines
-    from eagerx_pybullet.engine import PybulletEngine
-
-    engine = PybulletEngine.make(rate=rate_engine, gui=False, egl=False, sync=True, real_time_factor=rtf)
-
-    # from eagerx_reality.engine import RealEngine
-    # engine = RealEngine.make(rate=rate_engine, sync=True)
+    if real:
+        from eagerx_reality.engine import RealEngine
+        engine = RealEngine.make(rate=rate_engine, sync=True)
+    else:
+        from eagerx_pybullet.engine import PybulletEngine
+        engine = PybulletEngine.make(rate=rate_engine, gui=True, egl=True, sync=True, real_time_factor=rtf)
 
     # Add Dummy object 'task' with a single EngineState that creates a task (if the engine is a PybulletEngine)
     if engine.config.entity_id == "eagerx_pybullet.engine/PybulletEngine":
-        from eagerx_demo.task.enginestates import TaskState
+        # from eagerx_demo.task.enginestates import TaskState
+        from eagerx_demo.task.agile import AgileTaskState
         from eagerx.core.space import Space
-
         task_es_name = "task"
-        task_es = TaskState.make(workspace=[0.2, 0.5, -0.3, 0.3])
+        task_es = AgileTaskState.make(engine_pos=[pick_poses[0][0]+0.1, 0.0, -0.1], holder_pos=[pick_poses[0][0], pick_poses[0][1],  0.0], use_colors=["blue", "green", "yellow", "red"])
         engine.add_object(task_es_name, urdf=None)
         task_es_space = Space(low=0, high=1, shape=(), dtype="int64")  # var that specifies the task.
         engine._add_engine_state(task_es_name, "reset", task_es, task_es_space.to_dict())
+
+        # Overwrite world_fn
+        engine.config.world_fn = "eagerx_demo.task.agile/world_with_table_and_plane"
 
     # Define environment
     from eagerx_demo.env import ArmEnv
@@ -184,17 +224,27 @@ if __name__ == "__main__":
         engine=engine,
         backend=backend,
         render_mode="human",
-        reset_position=[0, -0.91435647, 0.85219240, 0, 1.6239657, 0],  # Position of the arm when reset (out-of-view)
+        reset_ee_pose=reset_pose,  # Position of the arm when reset (out-of-view)
         reset_gripper=[1.0],  # Gripper position when reset (open)
+        pick_poses=pick_poses,
+        pick_height=pick_height,
+        place_height=place_height,
+        force_start=True,
     )
 
     # Evaluate
     action_space = env.action_space
     action = action_space.sample()
-    for eps in range(5000):
-        print(f"Episode {eps}")
-        obs, info = env.reset()
-        done = False
-        while not done:
-            obs, reward, terminated, truncated, info = env.step(obs)
-            done = terminated or truncated
+    # Collect events until released
+    with Listener(on_press=on_press) as listener: 
+        video_buffer = []    
+        for eps in range(5000):
+            print(f"Episode {eps}")
+            obs, info = env.reset()
+            done = False
+            stop = False
+            while not done:
+                obs, reward, terminated, truncated, info = env.step(obs)
+                done = terminated or truncated or stop
+    listener.join()
+    env.shutdown()

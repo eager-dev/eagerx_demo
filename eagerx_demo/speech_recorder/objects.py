@@ -50,7 +50,7 @@ class SpeechRecorder(eagerx.Object):
     def pybullet_engine(spec: ObjectSpec, graph: EngineGraph):
         import pybullet_data
 
-        spec.engine.urdf = "%s/%s.urdf" % (pybullet_data.getDataPath(), "cube_small")
+        spec.engine.urdf = ""  #%s/%s.urdf" % (pybullet_data.getDataPath(), "cube_small")
         spec.engine.basePosition = spec.config.base_pos
         spec.engine.baseOrientation = spec.config.base_or
         spec.engine.fixed_base = True

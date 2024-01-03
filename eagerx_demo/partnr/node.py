@@ -23,13 +23,15 @@ class Partnr(eagerx.Node):
         rate: float,
         cam_spec: List[Dict[str, Any]],
         in_shape: List[int] = [320, 160, 6],
-        pix_size: float = 0.003125,
-        bounds: List[float] = [[0.05, 0.55], [-0.5, 0.5], [-0.08, 0.28]],
+        pix_size: float = 0.0015625,
+        bounds: List[float] = [[0.45, 0.7], [-0.3, 0.2], [-0.03, 0.5]],
         act_threshold=0.9,
-        attn_temp=0.05,
-        trans_temp=0.05,
+        attn_temp=0.1,
+        trans_temp=0.1,
         ee_trans=None,
         ee_rot=None,
+        evaluate=False,
+        camera_window=5,
         debug=False,
     ) -> NodeSpec:
         """
@@ -56,11 +58,11 @@ class Partnr(eagerx.Node):
             data_dir=str(root_dir / "data"),
             agent="dummy_cliport",
             n_demos=5,
-            n_rotations=1,
+            n_rotations=36,
             batchnorm=False,
             lr=1e-4,
             max_epochs=100,
-            max_steps=5,
+            max_steps=1,
             attn_stream_fusion_type="add",
             trans_stream_fusion_type="conv",
             lang_fusion_type="mult",
@@ -79,7 +81,8 @@ class Partnr(eagerx.Node):
         spec.config.trans_temp = trans_temp
         spec.config.ee_trans = ee_trans or [0, 0, 0]
         spec.config.ee_rot = ee_rot or [0, 0, 0, 1]
-
+        spec.config.evaluate = evaluate
+        spec.config.camera_window = camera_window
         return spec
 
     def initialize(self, spec: NodeSpec):
@@ -89,6 +92,7 @@ class Partnr(eagerx.Node):
         self.ee_trans = spec.config.ee_trans
         self.ee_rot = spec.config.ee_rot
         self.debug = spec.config.debug
+        self.evaluate = spec.config.evaluate
         self.pick_place = None
         self.updating = False
         self.inferring = False
@@ -102,6 +106,7 @@ class Partnr(eagerx.Node):
             episode,
         ) = utils.initialize_cliport(spec.config)
         self.episode_number = episode
+        self.camera_window = spec.config.camera_window
 
     @eagerx.register.states()
     def reset(self):
@@ -116,8 +121,8 @@ class Partnr(eagerx.Node):
     )
     def callback(self, t_n: float, color: Msg, depth: Msg, speech: Msg):
         speech_data = speech.msgs[-1]
-        color_data = color.msgs[-1]
-        depth_data = depth.msgs[-1]
+        color_data = color.msgs[-self.camera_window :]
+        depth_data = depth.msgs[-self.camera_window :]
         pick_place = dict(
             pick_pos=np.zeros(3, dtype="float32"),
             place_pos=np.zeros(3, dtype="float32"),
@@ -133,7 +138,7 @@ class Partnr(eagerx.Node):
             self.inferring = True
             thread = Thread(target=self._act, args=(cmd, color_data, depth_data), daemon=True)
             thread.start()
-        elif not self.updating and not self.inferring and self.episode_number > 0 and not self.debug:
+        elif not self.evaluate and not self.updating and not self.inferring and self.episode_number > 0 and not self.debug:
             # Update model in separate thread
             self.updating = True
             thread = Thread(target=self._update_model, daemon=True)
@@ -148,8 +153,10 @@ class Partnr(eagerx.Node):
 
     def _act(self, cmd, color_data, depth_data):
         obs = {"color": (), "depth": ()}
-        obs["color"] += (color_data,)
-        obs["depth"] += (depth_data,)
+        for data in color_data:
+            obs["color"] += (data,)
+        for data in depth_data:
+            obs["depth"] += (data,)
 
         info = dict(lang_goal=cmd)
 
@@ -168,19 +175,13 @@ class Partnr(eagerx.Node):
         print(act["pick"][:2])
         print(act["place"][:2])
         # Act if confidence is high enough, otherwise query for demonstration
-        if confidence > self.act_threshold:
+
+        if not self.evaluate and confidence > self.act_threshold:
             self.pick_place = utils.get_pick_place(act, self.ee_trans, self.ee_rot)
         else:
             img = act["img"][:, :, :3]
-            points = np.asarray(
-                [
-                    [act["pick"][1], act["pick"][0]],
-                    [act["pick"][1], act["pick"][0]],
-                    [act["place"][1], act["place"][0]],
-                    [act["place"][1], act["place"][0]],
-                ]
-            )
-            self.points = demonstrate(img, points)
+            pixels = utils.act_to_demonstration_pixels(act, self.train_ds.pix_size)
+            self.points = demonstrate(img, pixels)
             if np.sum(self.points) > 0:
                 demo_act = utils.demonstration_pixels_to_act(act, self.points, self.train_ds.bounds, self.train_ds.pix_size)
                 self.pick_place = utils.get_pick_place(demo_act, self.ee_trans, self.ee_rot)
@@ -198,5 +199,8 @@ class Partnr(eagerx.Node):
         self.trainer.fit(self.agent)
         self.trainer.current_epoch = 0
         self.trainer.global_step = 0
-        self.trainer.save_checkpoint(self.checkpoint_path)
+        temp_path = self.checkpoint_path.split(".ckpt")[0] + "_temp.ckpt"
+        self.trainer.save_checkpoint(temp_path)
+        # copy temp checkpoint to checkpoint path
+        Path(temp_path).replace(self.checkpoint_path)
         self.updating = False

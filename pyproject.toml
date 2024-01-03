@@ -28,6 +28,8 @@ pynput = "^1.7.6"
 protobuf = "<4"
 torch = "1.12"
 torchvision = "0.13.0"
+eagerx-franka = "^0.0.11"
+pyrealsense2 = "^2.54.2.5684"
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"
