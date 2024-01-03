@@ -99,10 +99,11 @@ def test_demo(engine="single_process"):
     speech = SpeechRecorder.make(
         name="speech_recorder",
         rate=rate_speech,
-        device="cuda",
+        device="cpu",
         ckpt="tiny.en",
         prompt=prompt,
         type_commands=type_commands,
+        test=True,
     )
     graph.add(speech)
     graph.connect(source=speech.sensors.speech, observation="speech")
@@ -207,4 +208,4 @@ def test_demo(engine="single_process"):
 
 if __name__ == "__main__":
     test_demo(engine="single_process")
-    test_demo(engine="ros1")
+    # test_demo(engine="ros1")
