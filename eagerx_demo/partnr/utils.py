@@ -55,6 +55,7 @@ def demonstration_pixels_to_act(act, points, bounds, pix_size):
     act["place"] = [place[0], place[1], p1_theta]
     return act
 
+
 def act_to_demonstration_pixels(act, pix_size):
     # pixels = np.asarray(
     #     [
@@ -64,7 +65,7 @@ def act_to_demonstration_pixels(act, pix_size):
     #         [act["place"][1], act["place"][0]],
     #     ]
     # )
-    
+
     # Gripper width is 0.08 m.
     # Take the gripper width and orientation into account when calculating the pick and place pixels.
     gripper_width = 0.02 / pix_size
@@ -72,10 +73,22 @@ def act_to_demonstration_pixels(act, pix_size):
     place_theta = deepcopy(act["place"][2])
     pixels = np.asarray(
         [
-            [act["pick"][1] - np.sin(pick_theta) * gripper_width * 0.5, act["pick"][0] - np.cos(pick_theta) * gripper_width * 0.5],
-            [act["pick"][1] + np.sin(pick_theta) * gripper_width * 0.5, act["pick"][0] + np.cos(pick_theta) * gripper_width * 0.5],
-            [act["place"][1] - np.sin(place_theta) * gripper_width * 0.5, act["place"][0] - np.cos(place_theta) * gripper_width * 0.5],
-            [act["place"][1] + np.sin(place_theta) * gripper_width * 0.5, act["place"][0] + np.cos(place_theta) * gripper_width * 0.5],
+            [
+                act["pick"][1] - np.sin(pick_theta) * gripper_width * 0.5,
+                act["pick"][0] - np.cos(pick_theta) * gripper_width * 0.5,
+            ],
+            [
+                act["pick"][1] + np.sin(pick_theta) * gripper_width * 0.5,
+                act["pick"][0] + np.cos(pick_theta) * gripper_width * 0.5,
+            ],
+            [
+                act["place"][1] - np.sin(place_theta) * gripper_width * 0.5,
+                act["place"][0] - np.cos(place_theta) * gripper_width * 0.5,
+            ],
+            [
+                act["place"][1] + np.sin(place_theta) * gripper_width * 0.5,
+                act["place"][0] + np.cos(place_theta) * gripper_width * 0.5,
+            ],
         ]
     )
     return pixels

@@ -16,7 +16,33 @@ TASK_NAMES = [""]
 OBJECTS = ["bolt", "screw", "thing", "item", "fastener", "one"]
 PICK_ACTIONS = ["pick", "grab", "take", "get"]
 PLACE_ACTIONS = ["place", "put", "set", "drop"]
-PREAMBLES = ["can you", "please", "will you", "could you", "would you", "can you please", "please can you", "please will you", "will you please", "could you please", "please could you", "could you please", "would you please", "please would you", "would you please", "can you please", "please can you", "please will you", "will you please", "could you please", "please could you", "could you please", "would you please", "please would you", "would you please"]
+PREAMBLES = [
+    "can you",
+    "please",
+    "will you",
+    "could you",
+    "would you",
+    "can you please",
+    "please can you",
+    "please will you",
+    "will you please",
+    "could you please",
+    "please could you",
+    "could you please",
+    "would you please",
+    "please would you",
+    "would you please",
+    "can you please",
+    "please can you",
+    "please will you",
+    "will you please",
+    "could you please",
+    "please could you",
+    "could you please",
+    "would you please",
+    "please would you",
+    "would you please",
+]
 GREETINGS = ["hello", "hi", "hey", "howdy", "greetings", "good morning", "good afternoon", "good evening", "yo"]
 GREETINGS = GREETINGS + [greeting + " robot" for greeting in GREETINGS]
 TOP_LEFTS = ["top left", "upper left", "left top", "left upper"]
@@ -25,11 +51,66 @@ BOTTOM_LEFTS = ["bottom left", "lower left", "left bottom", "left lower", "lower
 BOTTOM_RIGHTS = ["bottom right", "lower right", "right bottom", "right lower", "lower right hand corner"]
 MIDDLE_LEFTS = ["middle left", "left middle", "center left", "left center", "upper one of the lower left corner"]
 MIDDLE_RIGHTS = ["middle right", "right middle", "center right", "right center", "upper one of the lower right corner"]
-LEFT_TUBES = ["left tube", "left pipe", "left cylinder", "tube on the left", "pipe on the left", "cylinder on the left", "lefthand tube", "lefthand pipe", "lefthand cylinder", "tube on the lefthand side", "pipe on the lefthand side", "cylinder on the lefthand side", "tube on the left hand side", "pipe on the left hand side", "cylinder on the left hand side"]
-RIGHT_TUBES = ["right tube", "right pipe", "right cylinder", "tube on the right", "pipe on the right", "cylinder on the right", "righthand tube", "righthand pipe", "righthand cylinder", "tube on the righthand side", "pipe on the righthand side", "cylinder on the righthand side", "tube on the right hand side", "pipe on the right hand side", "cylinder on the right hand side"]
-MIDDLE_TUBES = ["middle tube", "middle pipe", "middle cylinder", "tube in the middle", "pipe in the middle", "cylinder in the middle"]
+LEFT_TUBES = [
+    "left tube",
+    "left pipe",
+    "left cylinder",
+    "tube on the left",
+    "pipe on the left",
+    "cylinder on the left",
+    "lefthand tube",
+    "lefthand pipe",
+    "lefthand cylinder",
+    "tube on the lefthand side",
+    "pipe on the lefthand side",
+    "cylinder on the lefthand side",
+    "tube on the left hand side",
+    "pipe on the left hand side",
+    "cylinder on the left hand side",
+]
+RIGHT_TUBES = [
+    "right tube",
+    "right pipe",
+    "right cylinder",
+    "tube on the right",
+    "pipe on the right",
+    "cylinder on the right",
+    "righthand tube",
+    "righthand pipe",
+    "righthand cylinder",
+    "tube on the righthand side",
+    "pipe on the righthand side",
+    "cylinder on the righthand side",
+    "tube on the right hand side",
+    "pipe on the right hand side",
+    "cylinder on the right hand side",
+]
+MIDDLE_TUBES = [
+    "middle tube",
+    "middle pipe",
+    "middle cylinder",
+    "tube in the middle",
+    "pipe in the middle",
+    "cylinder in the middle",
+]
 HOLES = ["hole", "opening", "insertion point", "cavity"]
-ALL = OBJECTS + PICK_ACTIONS + PLACE_ACTIONS + PREAMBLES + GREETINGS + TOP_LEFTS + TOP_RIGHTS + BOTTOM_LEFTS + BOTTOM_RIGHTS + MIDDLE_LEFTS + MIDDLE_RIGHTS + LEFT_TUBES + RIGHT_TUBES + MIDDLE_TUBES + HOLES
+ALL = (
+    OBJECTS
+    + PICK_ACTIONS
+    + PLACE_ACTIONS
+    + PREAMBLES
+    + GREETINGS
+    + TOP_LEFTS
+    + TOP_RIGHTS
+    + BOTTOM_LEFTS
+    + BOTTOM_RIGHTS
+    + MIDDLE_LEFTS
+    + MIDDLE_RIGHTS
+    + LEFT_TUBES
+    + RIGHT_TUBES
+    + MIDDLE_TUBES
+    + HOLES
+)
 
 
 def augment_language(language):
@@ -160,7 +241,17 @@ def augment_language(language):
                             break
             if all_words_in_language:
                 break
-    locations = [TOP_LEFTS, TOP_RIGHTS, BOTTOM_LEFTS, BOTTOM_RIGHTS, MIDDLE_LEFTS, MIDDLE_RIGHTS, LEFT_TUBES, RIGHT_TUBES, MIDDLE_TUBES]
+    locations = [
+        TOP_LEFTS,
+        TOP_RIGHTS,
+        BOTTOM_LEFTS,
+        BOTTOM_RIGHTS,
+        MIDDLE_LEFTS,
+        MIDDLE_RIGHTS,
+        LEFT_TUBES,
+        RIGHT_TUBES,
+        MIDDLE_TUBES,
+    ]
     for location in locations:
         for loc in location:
             if loc in language:

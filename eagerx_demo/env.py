@@ -133,7 +133,7 @@ class ArmEnv(eagerx.BaseEnv):
             # get closest pick_pos
             pick_pos = min(self._pick_poses, key=lambda x: np.linalg.norm(x[0] - pick_pos[0]))
             obs["pick_pos"][-1][:3] = pick_pos
-        
+
         if self._pick_height is not None:
             obs["pick_pos"][-1][2] = self._pick_height
 
@@ -284,7 +284,9 @@ class Stop(Task):
 
 
 class MoveEE(Task):
-    def __init__(self, name: str, ee_pos: np.ndarray, ee_orn: np.ndarray, tol: float = 0.01, num_updates: int = 100, place: bool = False):
+    def __init__(
+        self, name: str, ee_pos: np.ndarray, ee_orn: np.ndarray, tol: float = 0.01, num_updates: int = 100, place: bool = False
+    ):
         super().__init__(name)
         self._ee_pos = ee_pos
         self._ee_orn = ee_orn
@@ -371,11 +373,11 @@ class Pick(Task):
             task_open = MoveGripper(f"{self.name}/open", gripper="open", num_updates=5, tol=1e-3)
             # Grasp pose
             task_grasp = MoveEE(
-                f"{self.name}/grasp at xyz={self._ee_pos}", self._ee_pos, self._ee_orn, num_updates=50, tol=0.5*self._tol
+                f"{self.name}/grasp at xyz={self._ee_pos}", self._ee_pos, self._ee_orn, num_updates=50, tol=0.5 * self._tol
             )
             task_close = MoveGripper(f"{self.name}/close", gripper="closed", num_updates=15, tol=1e-5)
             # Grasp
-            task_lift = MoveEE(f"{self.name}/post_grasp to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=3*self._tol)
+            task_lift = MoveEE(f"{self.name}/post_grasp to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, tol=3 * self._tol)
             # Add tasks to queue
             # Notice reverse order, because we are left-extending the queue.
             queue.extendleft(reversed([task_pre, task_open, task_grasp, task_close, task_lift]))
@@ -397,18 +399,27 @@ class Place(Task):
         if self.status == TASK_STATUS["success"]:
             # Pre-place pose
             ee_pos_pre = np.array([self._ee_pos[0], self._ee_pos[1], self._ee_pos[2] + self._height], dtype="float32")
-            ee_pos_pre_2 = np.array([self._ee_pos[0], self._ee_pos[1], self._ee_pos[2] + self._height/2], dtype="float32")
+            ee_pos_pre_2 = np.array([self._ee_pos[0], self._ee_pos[1], self._ee_pos[2] + self._height / 2], dtype="float32")
             ee_orn_pre = self._ee_orn
-            task_pre1 = MoveEE(f"{self.name}/pre_place to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, num_updates=70, tol=2*self._tol)
-            task_pre2 = MoveEE(f"{self.name}/pre_place to xyz={ee_pos_pre}", ee_pos_pre_2, ee_orn_pre, num_updates=70, tol=0.5*self._tol)
+            task_pre1 = MoveEE(
+                f"{self.name}/pre_place to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, num_updates=70, tol=2 * self._tol
+            )
+            task_pre2 = MoveEE(
+                f"{self.name}/pre_place to xyz={ee_pos_pre}", ee_pos_pre_2, ee_orn_pre, num_updates=70, tol=0.5 * self._tol
+            )
             # Place pose
             task_place = MoveEE(
-                f"{self.name}/place at xyz={self._ee_pos}", self._ee_pos, self._ee_orn, num_updates=200, tol=0.1*self._tol, place=True,
+                f"{self.name}/place at xyz={self._ee_pos}",
+                self._ee_pos,
+                self._ee_orn,
+                num_updates=200,
+                tol=0.1 * self._tol,
+                place=True,
             )  # TODO: INCREASE TOLERANCE & NUM_UPDATES DUE TO SPIRALING SEARCH.
             task_open = MoveGripper(f"{self.name}/open", gripper="open", num_updates=10, tol=5e-3)
             # Return to pre-place pose
             task_lift = MoveEE(
-                f"{self.name}/post_place to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, num_updates=50, tol=5*self._tol
+                f"{self.name}/post_place to xyz={ee_pos_pre}", ee_pos_pre, ee_orn_pre, num_updates=50, tol=5 * self._tol
             )
             # Add tasks to queue
             # Notice reverse order, because we are left-extending the queue.

@@ -121,8 +121,8 @@ class Partnr(eagerx.Node):
     )
     def callback(self, t_n: float, color: Msg, depth: Msg, speech: Msg):
         speech_data = speech.msgs[-1]
-        color_data = color.msgs[-self.camera_window:]
-        depth_data = depth.msgs[-self.camera_window:]
+        color_data = color.msgs[-self.camera_window :]
+        depth_data = depth.msgs[-self.camera_window :]
         pick_place = dict(
             pick_pos=np.zeros(3, dtype="float32"),
             place_pos=np.zeros(3, dtype="float32"),
