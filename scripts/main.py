@@ -53,8 +53,8 @@ if __name__ == "__main__":
     rate_engine = 20
     rate_cam = 20
     evaluate = False
-    real = True
-    ros = True
+    real = False
+    ros = False
     type_commands = False
     camera_window = 5
     record_file = Path("record.mp4")
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     ee_trans = [0, 0, 0]
     ee_rot = R.from_matrix([[1, 0, 0], [0, -1, 0], [0, 0, -1]]).as_quat().tolist()
 
-    partnr = Partnr.make(name="partnr", rate=rate_partnr, cam_spec=cam_spec, ee_trans=ee_trans, ee_rot=ee_rot, debug=False, evaluate=evaluate, pix_size=pix_size, bounds=bounds, camera_window=camera_window)
+    partnr = Partnr.make(name="interactive_cliport", rate=rate_partnr, cam_spec=cam_spec, ee_trans=ee_trans, ee_rot=ee_rot, debug=False, evaluate=evaluate, pix_size=pix_size, bounds=bounds, camera_window=camera_window)
     graph.add(partnr)
     graph.connect(source=speech.sensors.speech, target=partnr.inputs.speech)
     graph.connect(source=partnr.outputs.pick_pos, observation="pick_pos")
@@ -160,7 +160,7 @@ if __name__ == "__main__":
     from eagerx_demo.realsense.objects import RealSense
 
     cam = RealSense.make(
-        name="d435",
+        name="RealSense",
         rate=rate_cam,
         states=[],
         mode="rgbd",

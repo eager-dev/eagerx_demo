@@ -6,7 +6,7 @@
 
 
 What is the `eagerx_demo` package
--------------------------------------
+---------------------------------
 
 This repository contains the code for an interactive imitation learning demo using EAGERx.
 Specifically, it allows to train a [CLIPort](https://cliport.github.io/) model interactively using [PARTNR](https://partnr-learn.github.io/).
@@ -35,6 +35,7 @@ Demo Overview
 -------------
 
 <p align="center">
+  <img src="graph.png" width="100%" alt="graph"/>
   <img src="use_case.gif" width="100%"  alt="use_case"/> 
 </p>
 
