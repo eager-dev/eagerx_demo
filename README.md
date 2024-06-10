@@ -22,10 +22,10 @@ You can run the main code as follows:
 *Prerequisites:* Install [Poetry](https://python-poetry.org/docs/master/#installation) and [ROS](http://wiki.ros.org/noetic/Installation).
 Requirements for usage with real Franka robot:
 - [ros noetic](http://wiki.ros.org/noetic/Installation/Ubuntu)
-- [audio and video] sudo apt install ffmpeg libportaudio2 libasound-dev 
 - [franka_human_friendly_controllers](https://github.com/franzesegiovanni/franka_human_friendly_controllers) see [installation instructions](https://github.com/tud-phi/franka-emika-guide)
 
 ```bash
+    sudo apt update && sudo apt install ffmpeg libportaudio2 libasound-dev
     git clone git@github.com:eager-dev/eagerx_demo.git
     cd eagerx_demo
     poetry install
